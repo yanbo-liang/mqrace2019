@@ -3,10 +3,8 @@ package io.openmessaging;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -84,8 +82,11 @@ public class DefaultMessageStoreImpl extends MessageStore {
                         }
                     }
                     index = 0;
-                    writer.executorService.shutdownNow()
-                    ;
+                    writer.executorService.shutdownNow();
+                    Set<Map.Entry<Long, Path>> entries = Reader.lowerMap.entrySet();
+                    for (Map.Entry<Long, Path> entriy:entries){
+                        System.out.println(entriy.getValue());
+                    }
                 }
 
                 wait = false;
