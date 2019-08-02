@@ -14,7 +14,7 @@ public class DemoTester {
     public static void main(String args[]) throws Exception {
         //评测相关配置
         //发送阶段的发送数量，也即发送阶段必须要在规定时间内把这些消息发送完毕方可
-        int msgNum  = 1000000;
+        int msgNum  = 10000000;
         //发送阶段的最大持续时间，也即在该时间内，如果消息依然没有发送完毕，则退出评测
         int sendTime = 10 * 60 * 1000;
         //查询阶段的最大持续时间，也即在该时间内，如果消息依然没有消费完毕，则退出评测
@@ -75,26 +75,26 @@ public class DemoTester {
         }
         long msgCheckEnd = System.currentTimeMillis();
         System.out.printf("Message Check: %d ms Num:%d\n", msgCheckEnd - msgCheckStart, msgCheckNum.get());
-
-        //Step3: 查询聚合结果
-        long checkStart = System.currentTimeMillis();
-        AtomicLong valueCheckTimes = new AtomicLong(0);
-        AtomicLong valueCheckNum = new AtomicLong(0);
-        Thread[] checks = new Thread[checkTsNum];
-        for (int i = 0; i < checkTsNum; i++) {
-            checks[i] = new Thread(new ValueChecker(messageStore, maxCheckTime, checkTimes, msgNum, maxValueCheckSize, valueCheckTimes, valueCheckNum));
-        }
-        for (int i = 0; i < checkTsNum; i++) {
-            checks[i].start();
-        }
-        for (int i = 0; i < checkTsNum; i++) {
-            checks[i].join();
-        }
-        long checkEnd = System.currentTimeMillis();
-        System.out.printf("Value Check: %d ms Num: %d\n", checkEnd - checkStart, valueCheckNum.get());
-
-        //评测结果
-        System.out.printf("Total Score:%d\n", (msgNum / (sendSend- sendStart) + msgCheckNum.get() / (msgCheckEnd - msgCheckStart) + valueCheckNum.get() / (msgCheckEnd - msgCheckStart)));
+//
+//        //Step3: 查询聚合结果
+//        long checkStart = System.currentTimeMillis();
+//        AtomicLong valueCheckTimes = new AtomicLong(0);
+//        AtomicLong valueCheckNum = new AtomicLong(0);
+//        Thread[] checks = new Thread[checkTsNum];
+//        for (int i = 0; i < checkTsNum; i++) {
+//            checks[i] = new Thread(new ValueChecker(messageStore, maxCheckTime, checkTimes, msgNum, maxValueCheckSize, valueCheckTimes, valueCheckNum));
+//        }
+//        for (int i = 0; i < checkTsNum; i++) {
+//            checks[i].start();
+//        }
+//        for (int i = 0; i < checkTsNum; i++) {
+//            checks[i].join();
+//        }
+//        long checkEnd = System.currentTimeMillis();
+//        System.out.printf("Value Check: %d ms Num: %d\n", checkEnd - checkStart, valueCheckNum.get());
+//
+//        //评测结果
+//        System.out.printf("Total Score:%d\n", (msgNum / (sendSend- sendStart) + msgCheckNum.get() / (msgCheckEnd - msgCheckStart) + valueCheckNum.get() / (msgCheckEnd - msgCheckStart)));
     }
     static class Producer implements Runnable {
 
@@ -114,13 +114,14 @@ public class DemoTester {
             long count;
             while ( (count = counter.getAndIncrement()) < maxMsgNum && System.currentTimeMillis() <= maxTimeStamp) {
                 try {
-                    ByteBuffer buffer = ByteBuffer.allocate(8);
-                    buffer.putLong(0, count);
+//                    ByteBuffer buffer = ByteBuffer.allocate(8);
+//                    buffer.putLong(0, count);
+                    byte[] a = new byte[34];
                     // 为测试方便, 插入的是有规律的数据, 不是实际测评的情况
-                    messageStore.put(new Message(count, count, buffer.array()));
+                    messageStore.put(new Message(count, count, a));
                     if ((count & 0x1L) == 0) {
                         //偶数count多加一条消息
-                        messageStore.put(new Message(count, count, buffer.array()));
+                        messageStore.put(new Message(count, count, a));
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();
