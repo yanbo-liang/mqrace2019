@@ -1,12 +1,88 @@
 package io.openmessaging;
 
+import sun.nio.ch.DirectBuffer;
+
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.concurrent.Future;
 
 public class Reader {
+    static SortedMap<Long, Path> lowerMap = new TreeMap<>();
+    static SortedMap<Long, Path> upperMap = new TreeMap<>();
+
+    public static List<ByteBuffer> read(long tMin, long tMax) {
+        int lower = -1;
+        int upper = -1;
+        ArrayList<Map.Entry<Long, Path>> lowerList = new ArrayList<>(lowerMap.entrySet());
+        ArrayList<Map.Entry<Long, Path>> upperList = new ArrayList<>(upperMap.entrySet());
+        for (int i = 0; i < lowerList.size(); i++) {
+            if (lowerList.get(i).getKey() <= tMin) {
+                lower = i;
+            }
+        }
+        if (upperList.get(upperList.size() - 1).getKey() < tMax) {
+            upper = upperList.size() - 1;
+        } else {
+            for (int i = upperList.size() - 1; i >= 0; i--) {
+                if (upperList.get(i).getKey() >= tMax) {
+                    upper = i;
+                }
+            }
+        }
+        List<AsynchronousFileChannel> channels = new ArrayList<>();
+        List<ByteBuffer> buffers = new ArrayList<>();
+        List<Future<Integer>> futures = new ArrayList<>();
+        if (lower <= upper) {
+            for (int i = lower; i <= upper; i++) {
+                Path path = lowerList.get(i).getValue();
+                ByteBuffer buffer = ByteBuffer.allocateDirect(15 * 1024 * 1024);
+                buffers.add(buffer);
 
 
-    public void getAllFiles() {
-        File file = new File("/Users/yanbo.liang/test/");
-        File[] files = file.listFiles();
+                try {
+                    AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
+                    Future<Integer> readFuture = fileChannel.read(buffer, 0);
+                    futures.add(readFuture);
+                    channels.add(fileChannel);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }
+        while (true) {
+            if (check(futures)) {
+                break;
+
+            }
+        }
+        for (AsynchronousFileChannel channel: channels){
+            try {
+                channel.close();
+
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+        return buffers;
     }
+
+    public static <T> boolean check(List<Future<T>> futures) {
+        for (Future future : futures) {
+            if (!future.isDone()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
 }

@@ -1,7 +1,11 @@
 package io.openmessaging;
 
+import sun.nio.ch.DirectBuffer;
+
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 这是一个简单的基于内存的实现，以方便选手理解题意；
@@ -32,47 +36,82 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
+    AtomicBoolean init = new AtomicBoolean(false);
+    volatile boolean wait = true;
+
     @Override
-    synchronized List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        if (index != 0) {
-            System.out.println(1);
-            messages = Arrays.copyOf(messages, index);
+    List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+        if (!init.get()) {
+            if (init.compareAndSet(false, true)) {
 
-            Arrays.parallelSort(messages, new MessageComparator());
-            System.out.println(1);
 
-            int startIndex = 0;
-            int splitIndex = 200000;
+                if (index != 0) {
+                    System.out.println(1);
+                    messages = Arrays.copyOf(messages, index);
 
-            List<WriterTask> writerTasks = new ArrayList<>();
-            while (splitIndex < index) {
-                while (messages[splitIndex - 1].getT() == messages[splitIndex].getT()) {
-                    if (splitIndex + 1 < index) {
-                        splitIndex += 1;
+                    Arrays.parallelSort(messages, new MessageComparator());
+                    System.out.println(1);
+
+                    int startIndex = 0;
+                    int splitIndex = 200000;
+
+                    List<WriterTask> writerTasks = new ArrayList<>();
+                    while (splitIndex < index) {
+                        while (messages[splitIndex - 1].getT() == messages[splitIndex].getT()) {
+                            if (splitIndex + 1 < index) {
+                                splitIndex += 1;
+                            }
+                        }
+
+                        Message[] pickedMessages = Arrays.copyOfRange(messages, startIndex, splitIndex);
+                        startIndex = splitIndex;
+                        splitIndex += 200000;
+                        WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
+                        writer.write(writerTask);
+                        writerTasks.add(writerTask);
                     }
+                    System.out.println(splitIndex - 200000 + " " + index);
+                    Message[] pickedMessages = Arrays.copyOfRange(messages, splitIndex - 200000, index);
+                    WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
+                    writer.write(writerTask);
+                    writerTasks.add(writerTask);
+
+                    while (true) {
+                        if (check(writerTasks)) {
+                            break;
+                        }
+                    }
+                    index = 0;
+                    writer.executorService.shutdown();
                 }
 
-                Message[] pickedMessages = Arrays.copyOfRange(messages, startIndex, splitIndex);
-                startIndex = splitIndex;
-                splitIndex += 200000;
-                WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
-                writer.write(writerTask);
-                writerTasks.add(writerTask);
+                wait = false;
             }
-            System.out.println(splitIndex - 200000 + " " + index);
-            Message[] pickedMessages = Arrays.copyOfRange(messages, splitIndex - 200000, index);
-            WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
-            writer.write(writerTask);
-            writerTasks.add(writerTask);
-
-            while (true) {
-                if (check(writerTasks)) {
-                    break;
-                }
-            }
-            index = 0;
         }
-        return new ArrayList<>();
+        while (wait) {
+
+        }
+        long start = System.currentTimeMillis();
+        List<Message> aa = new LinkedList<>();
+        System.out.println(tMin + " " + tMax);
+        List<ByteBuffer> buffers = Reader.read(tMin, tMax);
+        for (ByteBuffer buffer : buffers) {
+            buffer.flip();
+            while (buffer.position() < buffer.limit()) {
+                long t = buffer.getLong();
+                long a = buffer.getLong();
+                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+                    byte[] b = new byte[8];
+                    buffer.get(b, 0, 8);
+                    aa.add(new Message(a, t, b));
+                } else {
+                    buffer.position(buffer.position() + 8);
+                }
+            }
+            ((DirectBuffer) buffer).cleaner().clean();
+        }
+        System.out.println(System.currentTimeMillis() - start);
+        return aa;
     }
 
     public boolean check(List<WriterTask> writerTasks) {
@@ -86,7 +125,29 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
-        return 0;
+        long start = System.currentTimeMillis();
+        System.out.println(tMin + " " + tMax);
+        List<ByteBuffer> buffers = Reader.read(tMin, tMax);
+        long total = 0;
+        long count = 0;
+        for (ByteBuffer buffer : buffers) {
+            buffer.flip();
+            while (buffer.position() < buffer.limit()) {
+                long t = buffer.getLong();
+                long a = buffer.getLong();
+                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+                    total += a;
+                    count += 1;
+                    buffer.position(buffer.position() + 8);
+
+                } else {
+                    buffer.position(buffer.position() + 8);
+                }
+            }
+            ((DirectBuffer) buffer).cleaner().clean();
+        }
+        System.out.println(System.currentTimeMillis() - start);
+        return total / count;
     }
 
 //        private NavigableMap<Long, List<Message>> msgMap = new TreeMap<Long, List<Message>>();

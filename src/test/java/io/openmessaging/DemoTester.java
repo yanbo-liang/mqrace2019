@@ -21,7 +21,7 @@ public class DemoTester {
         int checkTime = 10 * 60 * 1000;
 
         //正确性检测的次数
-        int checkTimes = 10000;
+        int checkTimes = 1000;
         //发送的线程数量
         int sendTsNum = 10;
         //查询的线程数量
@@ -75,26 +75,26 @@ public class DemoTester {
         }
         long msgCheckEnd = System.currentTimeMillis();
         System.out.printf("Message Check: %d ms Num:%d\n", msgCheckEnd - msgCheckStart, msgCheckNum.get());
-//
-//        //Step3: 查询聚合结果
-//        long checkStart = System.currentTimeMillis();
-//        AtomicLong valueCheckTimes = new AtomicLong(0);
-//        AtomicLong valueCheckNum = new AtomicLong(0);
-//        Thread[] checks = new Thread[checkTsNum];
-//        for (int i = 0; i < checkTsNum; i++) {
-//            checks[i] = new Thread(new ValueChecker(messageStore, maxCheckTime, checkTimes, msgNum, maxValueCheckSize, valueCheckTimes, valueCheckNum));
-//        }
-//        for (int i = 0; i < checkTsNum; i++) {
-//            checks[i].start();
-//        }
-//        for (int i = 0; i < checkTsNum; i++) {
-//            checks[i].join();
-//        }
-//        long checkEnd = System.currentTimeMillis();
-//        System.out.printf("Value Check: %d ms Num: %d\n", checkEnd - checkStart, valueCheckNum.get());
-//
-//        //评测结果
-//        System.out.printf("Total Score:%d\n", (msgNum / (sendSend- sendStart) + msgCheckNum.get() / (msgCheckEnd - msgCheckStart) + valueCheckNum.get() / (msgCheckEnd - msgCheckStart)));
+
+        //Step3: 查询聚合结果
+        long checkStart = System.currentTimeMillis();
+        AtomicLong valueCheckTimes = new AtomicLong(0);
+        AtomicLong valueCheckNum = new AtomicLong(0);
+        Thread[] checks = new Thread[checkTsNum];
+        for (int i = 0; i < checkTsNum; i++) {
+            checks[i] = new Thread(new ValueChecker(messageStore, maxCheckTime, checkTimes, msgNum, maxValueCheckSize, valueCheckTimes, valueCheckNum));
+        }
+        for (int i = 0; i < checkTsNum; i++) {
+            checks[i].start();
+        }
+        for (int i = 0; i < checkTsNum; i++) {
+            checks[i].join();
+        }
+        long checkEnd = System.currentTimeMillis();
+        System.out.printf("Value Check: %d ms Num: %d\n", checkEnd - checkStart, valueCheckNum.get());
+
+        //评测结果
+        System.out.printf("Total Score:%d\n", (msgNum / (sendSend- sendStart) + msgCheckNum.get() / (msgCheckEnd - msgCheckStart) + valueCheckNum.get() / (msgCheckEnd - msgCheckStart)));
     }
     static class Producer implements Runnable {
 
@@ -114,14 +114,14 @@ public class DemoTester {
             long count;
             while ( (count = counter.getAndIncrement()) < maxMsgNum && System.currentTimeMillis() <= maxTimeStamp) {
                 try {
-//                    ByteBuffer buffer = ByteBuffer.allocate(8);
-//                    buffer.putLong(0, count);
-                    byte[] a = new byte[34];
+                    ByteBuffer buffer = ByteBuffer.allocate(8);
+                    buffer.putLong(0, count);
+//                    byte[] a = new byte[34];
                     // 为测试方便, 插入的是有规律的数据, 不是实际测评的情况
-                    messageStore.put(new Message(count, count, a));
+                    messageStore.put(new Message(count, count, buffer.array()));
                     if ((count & 0x1L) == 0) {
                         //偶数count多加一条消息
-                        messageStore.put(new Message(count, count, a));
+                        messageStore.put(new Message(count, count, buffer.array()));
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();
@@ -182,12 +182,14 @@ public class DemoTester {
                     Iterator<Message> iter = msgs.iterator();
                     while (iter.hasNext()) {
                         if (index1 > index2) {
+                            System.out.println(1);
                             checkError();
                         }
 
                         Message msg = iter.next();
                         if (msg.getA() != msg.getT() || msg.getA() != index1 ||
                                 ByteBuffer.wrap(msg.getBody()).getLong() != index1) {
+                            System.out.println(2);
                             checkError();
                         }
 
@@ -196,6 +198,8 @@ public class DemoTester {
                             msg = iter.next();
                             if (msg.getA() != msg.getT() || msg.getA() != index1
                                     || ByteBuffer.wrap(msg.getBody()).getLong() != index1) {
+                                System.out.println(3);
+
                                 checkError();
                             }
                         }
@@ -205,6 +209,8 @@ public class DemoTester {
 
 
                     if (index1 - 1 != index2) {
+                        System.out.println(4);
+
                         checkError();
                     }
 

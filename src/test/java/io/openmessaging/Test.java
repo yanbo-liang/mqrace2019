@@ -17,50 +17,32 @@ import java.util.*;
 public class Test {
     public static void main(String[] args) {
 
+        List<ByteBuffer> a = new ArrayList<>();
+        while(true) {
+            try {
+                Path path = Paths.get("/Users/yanbo.liang/test/666669-800002");
 
-        Message m3 = new Message(3, 3, null);
-        Message m2 = new Message(2, 2, null);
-        Message m1 = new Message(1, 1, null);
-        Message[] messages = new Message[3];
-        messages[0] = m3;
-        messages[1] = m2;
-        messages[2] = m1;
-        Arrays.parallelSort(messages, new MessageComparator());
-        for (int i = 0;i<3;i++){
-            System.out.println(messages[i].getT());
+                AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
+                ByteBuffer buffer = ByteBuffer.allocateDirect(100 * 1024 * 1024);
+                fileChannel.read(buffer, 0, null, new CompletionHandler<Integer, ByteBuffer>() {
+
+                    @Override
+                    public void completed(Integer result, ByteBuffer attachment) {
+                        System.out.println("bytes written: " + result);
+                        a.add(buffer);
+                        ((DirectBuffer)buffer).cleaner().clean();
+                    }
+
+                    @Override
+                    public void failed(Throwable e, ByteBuffer attachment) {
+                        System.out.println("Write failed");
+                        e.printStackTrace();
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-
-        Message[] messages1 = Arrays.copyOfRange(messages, 1,5);
-        System.out.println(messages1.length);
-//        for (int i = 0;i<messages1.length;i++){
-//            System.out.println(messages1[i].getT());
-//        }
-//        List<ByteBuffer> a = new ArrayList<>();
-//        while(true) {
-//            try {
-//                Path path = Paths.get("/Users/yanbo.liang/test/0-200006");
-//
-//                AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
-//                ByteBuffer buffer = ByteBuffer.allocateDirect(100 * 1024 * 1024);
-//                fileChannel.read(buffer, 0, null, new CompletionHandler<Integer, ByteBuffer>() {
-//
-//                    @Override
-//                    public void completed(Integer result, ByteBuffer attachment) {
-//                        System.out.println("bytes written: " + result);
-//                        a.add(buffer);
-//                        ((DirectBuffer)buffer).cleaner().clean();
-//                    }
-//
-//                    @Override
-//                    public void failed(Throwable e, ByteBuffer attachment) {
-//                        System.out.println("Write failed");
-//                        e.printStackTrace();
-//                    }
-//                });
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
 
 
 //        long start = System.currentTimeMillis();
