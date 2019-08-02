@@ -1,7 +1,5 @@
 package io.openmessaging;
 
-import java.util.List;
-
 public class WriterTask {
     Message[] messages;
     long start;

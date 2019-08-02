@@ -3,8 +3,10 @@ package io.openmessaging;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -82,7 +84,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                         }
                     }
                     index = 0;
-                    writer.executorService.shutdown();
+                    writer.executorService.shutdownNow()
+                    ;
                 }
 
                 wait = false;
@@ -144,7 +147,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             }
             ((DirectBuffer) buffer).cleaner().clean();
         }
-        return total / count;
+        return count == 0 ? 0 : total / count;
     }
 
 //        private NavigableMap<Long, List<Message>> msgMap = new TreeMap<Long, List<Message>>();

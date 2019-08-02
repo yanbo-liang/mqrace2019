@@ -1,8 +1,9 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
-import java.util.*;
-
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -21,15 +22,15 @@ public class DemoTester {
         int checkTime = 10 * 60 * 1000;
 
         //正确性检测的次数
-        int checkTimes = 1000;
+        int checkTimes = 10000;
         //发送的线程数量
         int sendTsNum = 10;
         //查询的线程数量
         int checkTsNum = 10;
         // 每次查询消息的最大跨度
-        int maxMsgCheckSize = 100000;
+        int maxMsgCheckSize = 200000;
         // 每次查询求平均的最大跨度
-        int maxValueCheckSize = 100000;
+        int maxValueCheckSize = 200000;
 
         MessageStore messageStore = null;
 
