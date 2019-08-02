@@ -93,7 +93,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
         long start = System.currentTimeMillis();
         List<Message> aa = new LinkedList<>();
-        System.out.println(tMin + " " + tMax);
         List<ByteBuffer> buffers = Reader.read(tMin, tMax);
         for (ByteBuffer buffer : buffers) {
             buffer.flip();
@@ -101,16 +100,16 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 long t = buffer.getLong();
                 long a = buffer.getLong();
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-                    byte[] b = new byte[8];
-                    buffer.get(b, 0, 8);
+                    byte[] b = new byte[34];
+                    buffer.get(b, 0, 34);
                     aa.add(new Message(a, t, b));
                 } else {
-                    buffer.position(buffer.position() + 8);
+                        buffer.position(buffer.position() + 34);
+
                 }
             }
             ((DirectBuffer) buffer).cleaner().clean();
         }
-        System.out.println(System.currentTimeMillis() - start);
         return aa;
     }
 
@@ -126,7 +125,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         long start = System.currentTimeMillis();
-        System.out.println(tMin + " " + tMax);
         List<ByteBuffer> buffers = Reader.read(tMin, tMax);
         long total = 0;
         long count = 0;
@@ -138,15 +136,14 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                     total += a;
                     count += 1;
-                    buffer.position(buffer.position() + 8);
+                    buffer.position(buffer.position() + 34);
 
                 } else {
-                    buffer.position(buffer.position() + 8);
+                    buffer.position(buffer.position() + 34);
                 }
             }
             ((DirectBuffer) buffer).cleaner().clean();
         }
-        System.out.println(System.currentTimeMillis() - start);
         return total / count;
     }
 
