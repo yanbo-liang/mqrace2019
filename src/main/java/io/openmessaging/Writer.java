@@ -55,8 +55,7 @@ public class Writer {
                     }
                     asyncWrite(path, buffer, task);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (InterruptedException e) {
             }
         }
     }

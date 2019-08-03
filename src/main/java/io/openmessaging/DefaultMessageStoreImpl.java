@@ -40,7 +40,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     volatile boolean wait = true;
 
     @Override
-    List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+    synchronized List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         if (!init.get()) {
             if (init.compareAndSet(false, true)) {
 
