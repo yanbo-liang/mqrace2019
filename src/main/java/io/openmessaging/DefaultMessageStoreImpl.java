@@ -7,10 +7,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * 这是一个简单的基于内存的实现，以方便选手理解题意；
- * 实际提交时，请维持包名和类名不变，把方法实现修改为自己的内容；
- */
 public class DefaultMessageStoreImpl extends MessageStore {
     Writer writer = new Writer();
     int length = 5000000;
@@ -40,81 +36,89 @@ public class DefaultMessageStoreImpl extends MessageStore {
     volatile boolean wait = true;
 
     @Override
-    synchronized List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        if (!init.get()) {
-            if (init.compareAndSet(false, true)) {
+     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+        System.out.println("t");
+        try {
 
 
-                if (index != 0) {
-                    System.out.println(1);
-                    messages = Arrays.copyOf(messages, index);
+            if (!init.get()) {
+                if (init.compareAndSet(false, true)) {
 
-                    Arrays.parallelSort(messages, new MessageComparator());
-                    System.out.println(1);
 
-                    int startIndex = 0;
-                    int splitIndex = 200000;
+                    if (index != 0) {
+                        System.out.println(1);
+                        messages = Arrays.copyOf(messages, index);
 
-                    List<WriterTask> writerTasks = new ArrayList<>();
-                    while (splitIndex < index) {
-                        while (messages[splitIndex - 1].getT() == messages[splitIndex].getT()) {
-                            if (splitIndex + 1 < index) {
-                                splitIndex += 1;
+                        Arrays.parallelSort(messages, new MessageComparator());
+                        System.out.println(1);
+
+                        int startIndex = 0;
+                        int splitIndex = 200000;
+
+                        List<WriterTask> writerTasks = new ArrayList<>();
+                        while (splitIndex < index) {
+                            while (messages[splitIndex - 1].getT() == messages[splitIndex].getT()) {
+                                if (splitIndex + 1 < index) {
+                                    splitIndex += 1;
+                                }
                             }
-                        }
 
-                        Message[] pickedMessages = Arrays.copyOfRange(messages, startIndex, splitIndex);
-                        startIndex = splitIndex;
-                        splitIndex += 200000;
+                            Message[] pickedMessages = Arrays.copyOfRange(messages, startIndex, splitIndex);
+                            startIndex = splitIndex;
+                            splitIndex += 200000;
+                            WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
+                            writer.write(writerTask);
+                            writerTasks.add(writerTask);
+                        }
+                        System.out.println(splitIndex - 200000 + " " + index);
+                        Message[] pickedMessages = Arrays.copyOfRange(messages, splitIndex - 200000, index);
                         WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
                         writer.write(writerTask);
                         writerTasks.add(writerTask);
-                    }
-                    System.out.println(splitIndex - 200000 + " " + index);
-                    Message[] pickedMessages = Arrays.copyOfRange(messages, splitIndex - 200000, index);
-                    WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
-                    writer.write(writerTask);
-                    writerTasks.add(writerTask);
 
-                    while (true) {
-                        if (check(writerTasks)) {
-                            break;
+                        while (true) {
+                            if (check(writerTasks)) {
+                                break;
+                            }
+                        }
+                        index = 0;
+                        writer.executorService.shutdownNow();
+                        Set<Map.Entry<Long, Path>> entries = Reader.lowerMap.entrySet();
+                        for (Map.Entry<Long, Path> entriy : entries) {
+                            System.out.println(entriy.getValue());
                         }
                     }
-                    index = 0;
-                    writer.executorService.shutdownNow();
-                    Set<Map.Entry<Long, Path>> entries = Reader.lowerMap.entrySet();
-                    for (Map.Entry<Long, Path> entriy:entries){
-                        System.out.println(entriy.getValue());
-                    }
+
+                    wait = false;
                 }
-
-                wait = false;
             }
-        }
-        while (wait) {
+            while (wait) {
 
-        }
-        long start = System.currentTimeMillis();
-        List<Message> aa = new LinkedList<>();
-        List<ByteBuffer> buffers = Reader.read(tMin, tMax);
-        for (ByteBuffer buffer : buffers) {
-            buffer.flip();
-            while (buffer.position() < buffer.limit()) {
-                long t = buffer.getLong();
-                long a = buffer.getLong();
-                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-                    byte[] b = new byte[34];
-                    buffer.get(b, 0, 34);
-                    aa.add(new Message(a, t, b));
-                } else {
+            }
+            long start = System.currentTimeMillis();
+            List<Message> aa = new LinkedList<>();
+            List<ByteBuffer> buffers = Reader.read(tMin, tMax);
+            for (ByteBuffer buffer : buffers) {
+                buffer.flip();
+                while (buffer.position() < buffer.limit()) {
+                    long t = buffer.getLong();
+                    long a = buffer.getLong();
+                    if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+                        byte[] b = new byte[34];
+                        buffer.get(b, 0, 34);
+                        aa.add(new Message(a, t, b));
+                    } else {
                         buffer.position(buffer.position() + 34);
 
+                    }
                 }
+                ((DirectBuffer) buffer).cleaner().clean();
             }
-            ((DirectBuffer) buffer).cleaner().clean();
+            return aa;
+        }catch (Exception e){
+            e.printStackTrace();
         }
-        return aa;
+        return new ArrayList<>();
     }
 
     public boolean check(List<WriterTask> writerTasks) {

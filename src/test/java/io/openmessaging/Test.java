@@ -10,38 +10,28 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Future;
 
 public class Test {
     public static void main(String[] args) {
 
-        List<ByteBuffer> a = new ArrayList<>();
-        while(true) {
-            try {
-                Path path = Paths.get("/Users/yanbo.liang/test/666669-800002");
+        try {
+            while (true) {
+                ByteBuffer buffer = ByteBuffer.allocateDirect(15 * 1024 * 1024);
 
+                Path path = Paths.get("/Users/yanbo.liang/1.mkv");
                 AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
-                ByteBuffer buffer = ByteBuffer.allocateDirect(100 * 1024 * 1024);
-                fileChannel.read(buffer, 0, null, new CompletionHandler<Integer, ByteBuffer>() {
-
-                    @Override
-                    public void completed(Integer result, ByteBuffer attachment) {
-                        System.out.println("bytes written: " + result);
-                        a.add(buffer);
-                        ((DirectBuffer)buffer).cleaner().clean();
-                    }
-
-                    @Override
-                    public void failed(Throwable e, ByteBuffer attachment) {
-                        System.out.println("Write failed");
-                        e.printStackTrace();
-                    }
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
+                Future<Integer> readFuture = fileChannel.read(buffer, 0);
+                fileChannel.close();
             }
-        }
 
+//            while (!readFuture.isDone());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
 //        long start = System.currentTimeMillis();
 //        List<Message> list = new LinkedList<>();
