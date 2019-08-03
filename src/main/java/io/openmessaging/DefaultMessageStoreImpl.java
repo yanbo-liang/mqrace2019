@@ -1,6 +1,5 @@
 package io.openmessaging;
 
-import sun.jvm.hotspot.utilities.Bits;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
