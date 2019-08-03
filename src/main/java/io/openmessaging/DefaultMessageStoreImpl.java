@@ -1,5 +1,6 @@
 package io.openmessaging;
 
+import sun.jvm.hotspot.utilities.Bits;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
@@ -39,12 +40,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
      List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         System.out.println("t");
         try {
-
-
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
-
-
                     if (index != 0) {
                         System.out.println(1);
                         messages = Arrays.copyOf(messages, index);
@@ -96,11 +93,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
             }
             long start = System.currentTimeMillis();
-            List<Message> aa = new LinkedList<>();
+            List<Message> aa = new ArrayList<>(100000);
             List<ByteBuffer> buffers = Reader.read(tMin, tMax);
             for (ByteBuffer buffer : buffers) {
                 buffer.flip();
                 while (buffer.position() < buffer.limit()) {
+
                     long t = buffer.getLong();
                     long a = buffer.getLong();
                     if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
@@ -154,52 +152,4 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
         return count == 0 ? 0 : total / count;
     }
-
-//        private NavigableMap<Long, List<Message>> msgMap = new TreeMap<Long, List<Message>>();
-//
-//    @Override
-//    public synchronized void put(Message message) {
-//        if (!msgMap.containsKey(message.getT())) {
-//            msgMap.put(message.getT(), new ArrayList<Message>());
-//        }
-//
-//        msgMap.get(message.getT()).add(message);
-//    }
-//
-//
-//    @Override
-//    public synchronized List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-//        ArrayList<Message> res = new ArrayList<Message>();
-//        NavigableMap<Long, List<Message>> subMap = msgMap.subMap(tMin, true, tMax, true);
-//        for (Map.Entry<Long, List<Message>> mapEntry : subMap.entrySet()) {
-//            List<Message> msgQueue = mapEntry.getValue();
-//            for (Message msg : msgQueue) {
-//                if (msg.getA() >= aMin && msg.getA() <= aMax) {
-//                    res.add(msg);
-//                }
-//            }
-//        }
-//
-//        return res;
-//    }
-//
-//
-//    @Override
-//    public long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
-//        long sum = 0;
-//        long count = 0;
-//        NavigableMap<Long, List<Message>> subMap = msgMap.subMap(tMin, true, tMax, true);
-//        for (Map.Entry<Long, List<Message>> mapEntry : subMap.entrySet()) {
-//            List<Message> msgQueue = mapEntry.getValue();
-//            for (Message msg : msgQueue) {
-//                if (msg.getA() >= aMin && msg.getA() <= aMax) {
-//                    sum += msg.getA();
-//                    count++;
-//                }
-//            }
-//        }
-//
-//        return count == 0 ? 0 : sum / count;
-//    }
-
 }
