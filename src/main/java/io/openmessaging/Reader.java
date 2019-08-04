@@ -40,9 +40,11 @@ public class Reader {
         List<ByteBuffer> buffers = new ArrayList<>();
         List<Future<Integer>> futures = new ArrayList<>();
         if (lower <= upper) {
+            System.out.println(lowerList.size()+ " "+ upperList.size());
+            System.out.println(lower+ " "+ upper);
             for (int i = lower; i <= upper; i++) {
                 Path path = lowerList.get(i).getValue();
-                ByteBuffer buffer = ByteBuffer.allocateDirect(15 * 1024 * 1024);
+                ByteBuffer buffer = ByteBuffer.allocateDirect(12 * 1024 * 1024);
                 buffers.add(buffer);
 
 
