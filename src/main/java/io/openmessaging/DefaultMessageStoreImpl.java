@@ -21,7 +21,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long start = System.currentTimeMillis();
             Arrays.parallelSort(messages, new MessageComparator());
             System.out.println(System.currentTimeMillis() - start);
-            int splitIndex = 200000;
+            int splitIndex = 100000;
             while (messages[splitIndex - 1].getT() == messages[splitIndex].getT()) {
                 splitIndex += 1;
             }
@@ -46,7 +46,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                         Arrays.parallelSort(messages, new MessageComparator());
 
                         int startIndex = 0;
-                        int splitIndex = 200000;
+                        int splitIndex = 100000;
 
                         List<WriterTask> writerTasks = new ArrayList<>();
                         while (splitIndex < index) {
@@ -58,13 +58,13 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
                             Message[] pickedMessages = Arrays.copyOfRange(messages, startIndex, splitIndex);
                             startIndex = splitIndex;
-                            splitIndex += 200000;
+                            splitIndex += 100000;
                             WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
                             writer.write(writerTask);
                             writerTasks.add(writerTask);
                         }
-                        System.out.println(splitIndex - 200000 + " " + index);
-                        Message[] pickedMessages = Arrays.copyOfRange(messages, splitIndex - 200000, index);
+                        System.out.println(splitIndex - 100000 + " " + index);
+                        Message[] pickedMessages = Arrays.copyOfRange(messages, splitIndex - 100000, index);
                         WriterTask writerTask = new WriterTask(pickedMessages, pickedMessages[0].getT(), pickedMessages[pickedMessages.length - 1].getT());
                         writer.write(writerTask);
                         writerTasks.add(writerTask);

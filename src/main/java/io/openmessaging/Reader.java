@@ -48,12 +48,13 @@ public class Reader {
             System.out.println(tMin + " " + tMax + " " + lower + " " + upper);
             for (int i = lower; i <= upper; i++) {
                 Path path = lowerList.get(i).getValue();
-                ByteBuffer buffer = ByteBuffer.allocateDirect(12 * 1024 * 1024);
-                buffers.add(buffer);
+
 
 
                 try {
                     AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
+                    ByteBuffer buffer = ByteBuffer.allocateDirect((int)fileChannel.size());
+                    buffers.add(buffer);
                     Future<Integer> readFuture = fileChannel.read(buffer, 0);
                     futures.add(readFuture);
                     channels.add(fileChannel);
