@@ -18,7 +18,10 @@ public class Reader {
         ArrayList<Map.Entry<Long, Path>> upperList = new ArrayList<>(upperMap.entrySet());
         if (lowerList.get(0).getKey() > tMin) {
             lower = 0;
-        } else {
+        } else if (upperList.get(upperList.size() - 1).getKey() < tMin){
+            return new ArrayList<>();
+
+        }else {
             for (int i = 0; i < lowerList.size(); i++) {
                 if (lowerList.get(i).getKey() <= tMin) {
                     lower = i;
@@ -29,6 +32,8 @@ public class Reader {
 
         if (upperList.get(upperList.size() - 1).getKey() < tMax) {
             upper = upperList.size() - 1;
+        } else if (lowerList.get(0).getKey() > tMax) {
+            return new ArrayList<>();
         } else {
             for (int i = upperList.size() - 1; i >= 0; i--) {
                 if (upperList.get(i).getKey() >= tMax) {
@@ -40,7 +45,7 @@ public class Reader {
         List<ByteBuffer> buffers = new ArrayList<>();
         List<Future<Integer>> futures = new ArrayList<>();
         if (lower <= upper) {
-            System.out.println(tMin+" "+tMax+" "+lower+ " "+ upper);
+            System.out.println(tMin + " " + tMax + " " + lower + " " + upper);
             for (int i = lower; i <= upper; i++) {
                 Path path = lowerList.get(i).getValue();
                 ByteBuffer buffer = ByteBuffer.allocateDirect(12 * 1024 * 1024);
