@@ -16,11 +16,17 @@ public class Reader {
         int upper = -1;
         ArrayList<Map.Entry<Long, Path>> lowerList = new ArrayList<>(lowerMap.entrySet());
         ArrayList<Map.Entry<Long, Path>> upperList = new ArrayList<>(upperMap.entrySet());
-        for (int i = 0; i < lowerList.size(); i++) {
-            if (lowerList.get(i).getKey() <= tMin) {
-                lower = i;
+        if (lowerList.get(0).getKey() < tMin) {
+            lower = 0;
+        } else {
+            for (int i = 0; i < lowerList.size(); i++) {
+                if (lowerList.get(i).getKey() <= tMin) {
+                    lower = i;
+                }
             }
         }
+
+
         if (upperList.get(upperList.size() - 1).getKey() < tMax) {
             upper = upperList.size() - 1;
         } else {
@@ -59,11 +65,11 @@ public class Reader {
 
             }
         }
-        for (AsynchronousFileChannel channel: channels){
+        for (AsynchronousFileChannel channel : channels) {
             try {
                 channel.close();
 
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

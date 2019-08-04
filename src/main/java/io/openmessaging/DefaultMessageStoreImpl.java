@@ -37,16 +37,13 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
      List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        System.out.println("t");
         try {
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
                     if (index != 0) {
-                        System.out.println(1);
                         messages = Arrays.copyOf(messages, index);
 
                         Arrays.parallelSort(messages, new MessageComparator());
-                        System.out.println(1);
 
                         int startIndex = 0;
                         int splitIndex = 200000;
@@ -111,6 +108,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
                 ((DirectBuffer) buffer).cleaner().clean();
             }
+            System.out.println(System.currentTimeMillis()-start);
             return aa;
         }catch (Exception e){
             e.printStackTrace();
