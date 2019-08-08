@@ -31,7 +31,6 @@ public class MessageReader {
                 System.out.println("byte read " + result);
                 attachment.notify();
             }
-            System.out.println("lock release");
         }
 
         @Override
@@ -50,7 +49,6 @@ public class MessageReader {
         synchronized (buffer) {
             fileChannel.read(buffer, start, buffer, new Callback());
             try {
-                System.out.println(Thread.currentThread().getName());
                 buffer.wait();
 
             } catch (Exception e) {

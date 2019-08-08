@@ -213,6 +213,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
+        //        long start = System.currentTimeMillis();
+
         ByteBuffer buffer = reader.read(tMin, tMax);
 
         buffer.flip();
@@ -238,26 +240,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
         DirectBufferManager.returnBuffer(buffer);
         return count == 0 ? 0 : total / count;
-        //        long start = System.currentTimeMillis();
-//        List<ByteBuffer> buffers = MessageReader.read(tMin, tMax);
-//        long total = 0;
-//        long count = 0;
-//        for (ByteBuffer buffer : buffers) {
-//            buffer.flip();
-//            while (buffer.position() < buffer.limit()) {
-//                long t = buffer.getLong();
-//                long a = buffer.getLong();
-//                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-//                    total += a;
-//                    count += 1;
-//                    buffer.position(buffer.position() + 34);
-//
-//                } else {
-//                    buffer.position(buffer.position() + 34);
-//                }
-//            }
-//            ((DirectBuffer) buffer).cleaner().clean();
-//        }
-//        return count == 0 ? 0 : total / count;
+
     }
 }

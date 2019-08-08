@@ -1,5 +1,7 @@
 package io.openmessaging;
 
+import sun.nio.ch.DirectBuffer;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
@@ -91,6 +93,8 @@ public class MessageWriter {
                         buffer.flip();
                         asyncWrite(buffer, true);
                         DirectBufferManager.returnBuffer(buffer);
+                        DirectBufferManager.changeToRead();
+
                         break;
                     }
 
@@ -174,75 +178,4 @@ public class MessageWriter {
             }
         }
     }
-
-//    public class A implements Runnable {
-//        @Override
-//        public void run() {
-//            try {
-//                while (true) {
-//                    if (executorService.isShutdown()) {
-//                        break;
-//                    }
-//                    MessageWriterTask task = taskQueue.take();
-//                    int length = task.messageBuffer.length;
-////                    Path Path = Paths.get("/Users/yanbo.liang/test/" + task.start + "-" + task.end);
-////                    ByteBuffer buffer = ByteBuffer.allocate(24 * length);
-//                    Path Path = Paths.get("/alidata1/race2019/data/" + task.start + "-" + task.end);
-//                    ByteBuffer buffer = ByteBuffer.allocate(50 * length);
-////                    buffer.limit(12 * length + 50 * length);
-//                    int indexPosition = 0;
-//                    int dataPosition = 12 * length;
-//                    long last = Long.MIN_VALUE;
-//                    int position;
-//
-//                    for (Message message : task.messageBuffer) {
-////                        if (last != message.getT()) {
-////                            last = message.getT();
-////                            position = dataPosition;
-////
-////                            buffer.position(indexPosition);
-////                            buffer.putLong(last);
-////                            buffer.putInt(position);
-////                            indexPosition += 12;
-////                        }
-////                        buffer.position(dataPosition);
-//
-//                        buffer.putLong(message.getT());
-//                        buffer.putLong(message.getA());
-//                        buffer.put(message.getBody());
-////                        dataPosition += 50;
-//                    }
-//                    asyncWrite(Path, buffer, task);
-//                }
-//            } catch (InterruptedException e) {
-//            }
-//        }
-//    }
-
-
-//    private void asyncWrite(Path Path, ByteBuffer buffer, MessageWriterTask task) {
-//        try {
-//            AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(Path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-//            buffer.flip();
-//            fileChannel.write(buffer, 0, buffer, new CompletionHandler<Integer, ByteBuffer>() {
-//
-//                @Override
-//                public void completed(Integer result, ByteBuffer attachment) {
-//                    MessageReader.lowerMap.put(task.start, Path);
-//                    MessageReader.upperMap.put(task.end, Path);
-//
-//                    task.done = true;
-//                    System.out.println("bytes written: " + result);
-//                }
-//
-//                @Override
-//                public void failed(Throwable e, ByteBuffer attachment) {
-//                    System.out.println("Write failed");
-//                    e.printStackTrace();
-//                }
-//            });
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 }

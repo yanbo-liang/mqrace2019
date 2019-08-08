@@ -52,5 +52,4 @@ public class ByteUtils {
 //            result[--times[(int) (l - min)]] = messageBuffer[i];//按存取的方式取出c的元素
         }
     }
-
 }
