@@ -108,6 +108,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
         }
+        long start = System.currentTimeMillis();
+
         ByteBuffer buffer = reader.read(tMin, tMax);
         List<Message> messageList = new ArrayList<>();
 
@@ -118,7 +120,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         while (buffer.position() < buffer.limit()) {
 
             buffer.get(aa, 0, 16);
-            int dataSize=Constants.Message_Size-16;
+            int dataSize = Constants.Message_Size - 16;
             long t = ByteUtils.getLong(aa, 0);
             long a = ByteUtils.getLong(aa, 8);
             if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
@@ -131,6 +133,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
             }
         }
         DirectBufferManager.returnBuffer(buffer);
+        System.out.println("average:" + (System.currentTimeMillis() - start));
+
         return messageList;
 
 //        try {
@@ -213,7 +217,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
-        //        long start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
         ByteBuffer buffer = reader.read(tMin, tMax);
 
@@ -221,24 +225,25 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
         byte[] aa = new byte[16];
 
-        long total=0;
+        long total = 0;
         long count = 0;
         while (buffer.position() < buffer.limit()) {
 
             buffer.get(aa, 0, 16);
-            int dataSize=Constants.Message_Size-16;
+            int dataSize = Constants.Message_Size - 16;
 
             long t = ByteUtils.getLong(aa, 0);
             long a = ByteUtils.getLong(aa, 8);
             if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                 count++;
-                total+=a;
+                total += a;
                 buffer.position(buffer.position() + dataSize);
             } else {
                 buffer.position(buffer.position() + dataSize);
             }
         }
         DirectBufferManager.returnBuffer(buffer);
+        System.out.println("average:" + (System.currentTimeMillis() - start));
         return count == 0 ? 0 : total / count;
 
     }

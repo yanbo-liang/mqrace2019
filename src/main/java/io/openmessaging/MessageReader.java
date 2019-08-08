@@ -40,11 +40,14 @@ public class MessageReader {
     }
 
     public ByteBuffer read(long tMin, long tMax) {
+        long s = System.currentTimeMillis();
         long start = MessageIndex.readStartInclusive(tMin);
         long end = MessageIndex.readEndExclusive(tMax);
+        System.out.println("index:" + (System.currentTimeMillis() - s));
 
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         buffer.limit((int) (end - start));
+        long r = System.currentTimeMillis();
 
         synchronized (buffer) {
             fileChannel.read(buffer, start, buffer, new Callback());
@@ -55,6 +58,7 @@ public class MessageReader {
                 e.printStackTrace();
             }
         }
+        System.out.println("read:" + (System.currentTimeMillis() - r));
 
         return buffer;
     }
