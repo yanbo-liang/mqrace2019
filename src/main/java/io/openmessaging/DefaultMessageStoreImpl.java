@@ -118,15 +118,16 @@ public class DefaultMessageStoreImpl extends MessageStore {
         while (buffer.position() < buffer.limit()) {
 
             buffer.get(aa, 0, 16);
-
+            int dataSize=Constants.Message_Size-16;
             long t = ByteUtils.getLong(aa, 0);
             long a = ByteUtils.getLong(aa, 8);
             if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-                byte[] b = new byte[8];
-                buffer.get(b, 0, 8);
+
+                byte[] b = new byte[dataSize];
+                buffer.get(b, 0, dataSize);
                 messageList.add(new Message(a, t, b));
             } else {
-                buffer.position(buffer.position() + 8);
+                buffer.position(buffer.position() + dataSize);
             }
         }
         DirectBufferManager.returnBuffer(buffer);
@@ -223,15 +224,16 @@ public class DefaultMessageStoreImpl extends MessageStore {
         while (buffer.position() < buffer.limit()) {
 
             buffer.get(aa, 0, 16);
+            int dataSize=Constants.Message_Size-16;
 
             long t = ByteUtils.getLong(aa, 0);
             long a = ByteUtils.getLong(aa, 8);
             if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                 count++;
                 total+=a;
-                buffer.position(buffer.position() + 8);
+                buffer.position(buffer.position() + dataSize);
             } else {
-                buffer.position(buffer.position() + 8);
+                buffer.position(buffer.position() + dataSize);
             }
         }
         DirectBufferManager.returnBuffer(buffer);
