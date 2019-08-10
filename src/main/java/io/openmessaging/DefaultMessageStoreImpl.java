@@ -90,6 +90,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+        System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
+
         if (!init.get()) {
             if (init.compareAndSet(false, true)) {
                 writer.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
@@ -217,6 +219,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
+        System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
         long start = System.currentTimeMillis();
 
         ByteBuffer buffer = reader.read(tMin, tMax);

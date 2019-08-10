@@ -32,7 +32,7 @@ public class MessageIndex {
         if (floorEntry == null) {
             return 0;
         }
-        System.out.println(tMin+" "+ floorEntry.getKey()+" "+ floorEntry.getValue());
+//        System.out.println(tMin+" "+ floorEntry.getKey()+" "+ floorEntry.getValue());
         return floorEntry.getValue();
     }
 
@@ -41,7 +41,7 @@ public class MessageIndex {
         if (higherEntry == null) {
             return totalByteIndexed;
         }
-        System.out.println(tMax+" "+ higherEntry.getKey()+" "+ higherEntry.getValue());
+//        System.out.println(tMax+" "+ higherEntry.getKey()+" "+ higherEntry.getValue());
 
         return higherEntry.getValue();
     }
