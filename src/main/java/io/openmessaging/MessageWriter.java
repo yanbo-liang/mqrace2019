@@ -1,5 +1,7 @@
 package io.openmessaging;
 
+import me.lemire.integercompression.IntCompressor;
+import me.lemire.integercompression.differential.IntegratedIntCompressor;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.IOException;
@@ -81,6 +83,8 @@ public class MessageWriter {
                         sortMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
                         ByteUtils.countSort(messageBuffer, sortMessageBuffer);
 
+
+
                         MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize + task.getBufferLimit());
 
                         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
@@ -112,7 +116,24 @@ public class MessageWriter {
                     ByteUtils.countSort(messageBuffer, sortMessageBuffer);
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
+                    long compressStart = System.currentTimeMillis();
+
+                    int[] aa = new int[messageBatchSize * 2];
+                    for (int i = 0; i < messageBatchSize; i++) {
+                        aa[2 * i] = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize);
+                        aa[2 * i + 1] = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8);
+                    }
+                    IntegratedIntCompressor compressor = new IntegratedIntCompressor();
+                    int[] compress = compressor.compress(aa);
+                    System.out.println("compress time: " + (System.currentTimeMillis() - compressStart));
+                    System.out.println("compress length: " +aa.length+"->"+compress.length);
+                     compressStart = System.currentTimeMillis();
+
+                    int[] uncompress = compressor.uncompress(compress);
+                    System.out.println("compress time: " + (System.currentTimeMillis() - compressStart));
+                    System.out.println("compress length: " +compress.length+"->"+uncompress.length);
 //                    LinearExampleChecker.check(sortMessageBuffer);
+
 
                     MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize);
 
