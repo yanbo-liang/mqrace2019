@@ -123,7 +123,7 @@ public class MessageWriter {
                         aa[2 * i] = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize);
                         aa[2 * i + 1] = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8);
                     }
-                    IntegratedIntCompressor compressor = new IntegratedIntCompressor();
+                    IntCompressor compressor = new IntCompressor();
                     int[] compress = compressor.compress(aa);
                     System.out.println("compress time: " + (System.currentTimeMillis() - compressStart));
                     System.out.println("compress length: " +aa.length+"->"+compress.length);
@@ -134,6 +134,7 @@ public class MessageWriter {
                     System.out.println("compress length: " +compress.length+"->"+uncompress.length);
 //                    LinearExampleChecker.check(sortMessageBuffer);
 
+                    System.exit(1);
 
                     MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize);
 
