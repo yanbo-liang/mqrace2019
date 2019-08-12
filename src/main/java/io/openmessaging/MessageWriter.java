@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.Deflater;
 
 public class MessageWriter {
     private AsynchronousFileChannel messagesChannel;
@@ -143,6 +144,7 @@ public class MessageWriter {
 
                     int[] tData = new int[messageBatchSize];
                     int[] aData = new int[messageBatchSize];
+                    ByteBuffer tmpbuffer = ByteBuffer.allocate(messageBatchSize*4);
 
                     ByteBuffer noDataBuffer = DirectBufferManager.borrowBuffer();
                     for (int i = 0; i < messageBatchSize; i++) {
@@ -152,6 +154,7 @@ public class MessageWriter {
                         noDataBuffer.putInt(a);
                         tData[i] = t;
                         aData[i] = a;
+                        tmpbuffer.putInt(a);
                     }
 
                     IntegratedIntCompressor iic = new IntegratedIntCompressor();
@@ -174,6 +177,18 @@ public class MessageWriter {
                     start = System.currentTimeMillis();
                     iic.uncompress(compressed);
                     System.out.println(System.currentTimeMillis()-start);
+
+                    Deflater deflater = new Deflater(1);
+                    deflater.setInput(tmpbuffer.array());
+                    deflater.finish();
+                    byte[] output = new byte[messageBatchSize*4];
+
+                    long s = System.currentTimeMillis();
+                    int compressedSize = deflater.deflate(output);
+                    System.out.println(System.currentTimeMillis() - s);
+                    System.out.println(compressedSize);
+
+
                     System.exit(1);
                     noDataBuffer.flip();
 
