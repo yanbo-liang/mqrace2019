@@ -75,7 +75,7 @@ public class MessageWriter {
                 int t = (int) ByteUtils.getLong(sortMessageBuffer, i);
                 int a = (int) ByteUtils.getLong(sortMessageBuffer, i + 8);
                 unCompressedHeaderBuffer.putInt(t);
-                unCompressedHeaderBuffer.putInt(a);
+                unCompressedHeaderBuffer.putInt(a-t);
             }
             byte[] uncompressed = unCompressedHeaderBuffer.array();
             byte[] compressed = compressedHeaderBuffer.array();
