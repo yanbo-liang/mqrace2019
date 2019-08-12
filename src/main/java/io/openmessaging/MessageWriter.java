@@ -106,7 +106,7 @@ public class MessageWriter {
 
 
                         ByteBuffer noDataBuffer1 =  DirectBufferManager.borrowBuffer();
-                        for (int i = 0; i < task.getBufferLimit(); i++) {
+                        for (int i = 0; i < task.getBufferLimit()/Constants.Message_Size; i++) {
                             noDataBuffer1.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + messageBufferSize));
                             noDataBuffer1.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8 + messageBufferSize));
                         }
@@ -172,6 +172,7 @@ public class MessageWriter {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                System.exit(1);
             }
 
             System.out.println("end");
