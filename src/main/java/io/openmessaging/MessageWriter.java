@@ -180,6 +180,8 @@ public class MessageWriter {
 
 
         private void asyncWrite(ByteBuffer buffer, ByteBuffer noDataByteBuffer, boolean end) {
+            System.out.println(noDataByteBuffer.limit());
+            System.out.println(noDataByteBuffer.position());
 
             pendingAsyncWrite.incrementAndGet();
             pendingAsyncWrite.incrementAndGet();
@@ -223,9 +225,12 @@ public class MessageWriter {
 
             totalByteWritten += buffer.limit();
             noDataTotalByteWritten += noDataByteBuffer.limit();
+            long start = System.currentTimeMillis();
             if (end) {
                 while (pendingAsyncWrite.get() != 0) {
-
+                    if (System.currentTimeMillis()-start>=20000){
+                        System.exit(1);
+                    }
                 }
 
                 try {
