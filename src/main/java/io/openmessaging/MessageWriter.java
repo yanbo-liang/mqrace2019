@@ -141,11 +141,30 @@ public class MessageWriter {
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
 
+                    int[] tData = new int[messageBatchSize];
+                    int[] aData = new int[messageBatchSize];
+
                     ByteBuffer noDataBuffer = DirectBufferManager.borrowBuffer();
                     for (int i = 0; i < messageBatchSize; i++) {
-                        noDataBuffer.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize));
-                        noDataBuffer.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8));
+                        int t = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize);
+                        int a = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8);
+                        noDataBuffer.putInt(t);
+                        noDataBuffer.putInt(a);
+                        tData[i] = t;
+                        aData[i] = a;
                     }
+
+                    IntegratedIntCompressor iic = new IntegratedIntCompressor();
+
+                    long start = System.currentTimeMillis();
+                    int[] compressed = iic.compress(tData);
+                    System.out.println(System.currentTimeMillis()-start);
+                    System.out.println("compressed from " + tData.length * 4 / 1024 + "KB to " + compressed.length * 4 / 1024 + "KB");
+                     start = System.currentTimeMillis();
+                    int[] compressed1 = iic.compress(aData);
+                    System.out.println(System.currentTimeMillis()-start);
+                    System.out.println("compressed from " + aData.length * 4 / 1024 + "KB to " + compressed1.length * 4 / 1024 + "KB");
+                    System.exit(1);
                     noDataBuffer.flip();
 
 //                    LinearExampleChecker.check(sortMessageBuffer);
@@ -228,7 +247,7 @@ public class MessageWriter {
             long start = System.currentTimeMillis();
             if (end) {
                 while (pendingAsyncWrite.get() != 0) {
-                    if (System.currentTimeMillis()-start>=20000){
+                    if (System.currentTimeMillis() - start >= 20000) {
                         System.exit(1);
                     }
                 }
