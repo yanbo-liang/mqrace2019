@@ -11,8 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
     private AsynchronousFileChannel messagesChannel;
-    private AsynchronousFileChannel messagesNoDataChannel;
-
+    private AsynchronousFileChannel headerChannel;
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -36,7 +35,7 @@ public class MessageWriter {
     public MessageWriter() {
         try {
             messagesChannel = AsynchronousFileChannel.open(Paths.get(Constants.Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            messagesNoDataChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -67,7 +66,6 @@ public class MessageWriter {
     }
 
     private class MessageWriterJob implements Runnable {
-
 
         private ByteBuffer getCompressedHeaderBuffer(int start, int length) {
             unCompressedHeaderBuffer.clear();
@@ -169,7 +167,7 @@ public class MessageWriter {
             pendingAsyncWrite.incrementAndGet();
             pendingAsyncWrite.incrementAndGet();
             messagesChannel.write(buffer, byteWritten, pendingAsyncWrite, new WriteCompletionHandler());
-            messagesNoDataChannel.write(noDataBuffer, headerByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+            headerChannel.write(noDataBuffer, headerByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
 
             byteWritten += buffer.limit();
             headerByteWritten += noDataBuffer.limit();
@@ -183,7 +181,7 @@ public class MessageWriter {
                 }
                 try {
                     messagesChannel.close();
-                    messagesNoDataChannel.close();
+                    headerChannel.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
