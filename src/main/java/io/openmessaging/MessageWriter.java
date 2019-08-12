@@ -151,7 +151,7 @@ public class MessageWriter {
                         noDataBuffer.putInt(t);
                         noDataBuffer.putInt(a);
                         tData[i] = t;
-                        aData[i] = a-t;
+                        aData[i] = a;
                     }
 
                     IntegratedIntCompressor iic = new IntegratedIntCompressor();
