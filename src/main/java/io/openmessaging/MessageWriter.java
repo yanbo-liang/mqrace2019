@@ -144,12 +144,13 @@ public class MessageWriter {
 
                     int[] tData = new int[messageBatchSize];
                     int[] aData = new int[messageBatchSize];
-                    ByteBuffer tmpbuffer = ByteBuffer.allocate(messageBatchSize*4);
+                    ByteBuffer tmpbuffer = ByteBuffer.allocate(messageBatchSize * 4);
 
                     ByteBuffer noDataBuffer = DirectBufferManager.borrowBuffer();
                     for (int i = 0; i < messageBatchSize; i++) {
                         int t = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize);
                         int a = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8);
+                        System.out.println(t + " " + a);
                         noDataBuffer.putInt(t);
                         noDataBuffer.putInt(a);
                         tData[i] = t;
@@ -161,27 +162,27 @@ public class MessageWriter {
 
                     long start = System.currentTimeMillis();
                     int[] compressed = iic.compress(tData);
-                    System.out.println(System.currentTimeMillis()-start);
+                    System.out.println(System.currentTimeMillis() - start);
                     System.out.println("compressed from " + tData.length * 4 / 1024 + "KB to " + compressed.length * 4 / 1024 + "KB");
-                     start = System.currentTimeMillis();
-                     iic.uncompress(compressed);
-                    System.out.println(System.currentTimeMillis()-start);
+                    start = System.currentTimeMillis();
+                    iic.uncompress(compressed);
+                    System.out.println(System.currentTimeMillis() - start);
 
                     start = System.currentTimeMillis();
 
                     IntCompressor ic = new IntCompressor();
 
                     int[] compressed1 = ic.compress(aData);
-                    System.out.println(System.currentTimeMillis()-start);
+                    System.out.println(System.currentTimeMillis() - start);
                     System.out.println("compressed from " + aData.length * 4 / 1024 + "KB to " + compressed1.length * 4 / 1024 + "KB");
                     start = System.currentTimeMillis();
                     iic.uncompress(compressed);
-                    System.out.println(System.currentTimeMillis()-start);
+                    System.out.println(System.currentTimeMillis() - start);
 
                     Deflater deflater = new Deflater(1);
                     deflater.setInput(tmpbuffer.array());
                     deflater.finish();
-                    byte[] output = new byte[messageBatchSize*4];
+                    byte[] output = new byte[messageBatchSize * 4];
 
                     long s = System.currentTimeMillis();
                     int compressedSize = deflater.deflate(output);
