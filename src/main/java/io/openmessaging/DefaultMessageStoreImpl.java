@@ -222,27 +222,21 @@ public class DefaultMessageStoreImpl extends MessageStore {
         System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
         long start = System.currentTimeMillis();
 
-        ByteBuffer buffer = reader.read(tMin, tMax);
+        ByteBuffer buffer = reader.readNoData(tMin, tMax);
 
         buffer.flip();
 
-        byte[] aa = new byte[16];
 
         long total = 0;
-        long count = 0;
+        int count = 0;
         while (buffer.position() < buffer.limit()) {
 
-            buffer.get(aa, 0, 16);
-            int dataSize = Constants.Message_Size - 16;
 
-            long t = ByteUtils.getLong(aa, 0);
-            long a = ByteUtils.getLong(aa, 8);
+            int t = buffer.getInt();
+            int a = buffer.getInt();
             if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                 count++;
                 total += a;
-                buffer.position(buffer.position() + dataSize);
-            } else {
-                buffer.position(buffer.position() + dataSize);
             }
         }
         DirectBufferManager.returnBuffer(buffer);

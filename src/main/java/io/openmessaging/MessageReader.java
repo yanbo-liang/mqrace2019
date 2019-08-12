@@ -13,11 +13,16 @@ import java.util.concurrent.ThreadFactory;
 
 public class MessageReader {
     private AsynchronousFileChannel fileChannel;
+    private AsynchronousFileChannel fileChannelNoData;
 
     public MessageReader() {
         try {
-            Path path = Paths.get(Constants.Path);
+            Path path = Paths.get(Constants.Messages);
             fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.READ);
+            Path nodata = Paths.get(Constants.Messages_Without_Data);
+
+            fileChannelNoData = AsynchronousFileChannel.open(nodata, StandardOpenOption.CREATE, StandardOpenOption.READ);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -51,6 +56,29 @@ public class MessageReader {
 
         synchronized (buffer) {
             fileChannel.read(buffer, start, buffer, new Callback());
+            try {
+                buffer.wait();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("read:" + (System.currentTimeMillis() - r));
+
+        return buffer;
+    }
+    public ByteBuffer readNoData(long tMin, long tMax) {
+        long s = System.currentTimeMillis();
+        long start = MessageIndex.readStartInclusive(tMin)/Constants.Message_Size*8;
+        long end = MessageIndex.readEndExclusive(tMax)/Constants.Message_Size*8;
+        System.out.println("index:" + (System.currentTimeMillis() - s));
+
+        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+        buffer.limit((int) (end - start));
+        long r = System.currentTimeMillis();
+
+        synchronized (buffer) {
+            fileChannelNoData.read(buffer, start, buffer, new Callback());
             try {
                 buffer.wait();
 
