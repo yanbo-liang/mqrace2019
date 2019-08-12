@@ -1,23 +1,17 @@
 package io.openmessaging;
 
-import me.lemire.integercompression.IntCompressor;
-import me.lemire.integercompression.differential.IntegratedIntCompressor;
-import sun.nio.ch.DirectBuffer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.Deflater;
 
 public class MessageWriter {
     private AsynchronousFileChannel messagesChannel;
-    private AsynchronousFileChannel messagesWithoutDataChannel;
+    private AsynchronousFileChannel messagesNoDataChannel;
 
 
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -33,13 +27,16 @@ public class MessageWriter {
     private byte[] messageBuffer;
     private byte[] sortMessageBuffer;
 
-    private long totalByteWritten = 0;
-    private long noDataTotalByteWritten = 0;
+    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
+    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 / 2);
+
+    private long byteWritten = 0;
+    private long headerByteWritten = 0;
 
     public MessageWriter() {
         try {
-            messagesChannel = AsynchronousFileChannel.open(Paths.get(Constants.Messages), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            messagesWithoutDataChannel = AsynchronousFileChannel.open(Paths.get(Constants.Messages_Without_Data), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            messagesChannel = AsynchronousFileChannel.open(Paths.get(Constants.Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            messagesNoDataChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,15 +67,48 @@ public class MessageWriter {
     }
 
     private class MessageWriterJob implements Runnable {
+
+
+        private ByteBuffer getCompressedHeaderBuffer(int start, int length) {
+            unCompressedHeaderBuffer.clear();
+            for (int i = start; i < length; i += messageSize) {
+                int t = (int) ByteUtils.getLong(sortMessageBuffer, i);
+                int a = (int) ByteUtils.getLong(sortMessageBuffer, i + 8);
+                unCompressedHeaderBuffer.putInt(t);
+                unCompressedHeaderBuffer.putInt(a);
+            }
+            byte[] uncompressed = unCompressedHeaderBuffer.array();
+            byte[] compressed = compressedHeaderBuffer.array();
+            int compressedSize = CompressUtil.compress(uncompressed, 0, uncompressed.length, compressed, 0, compressed.length);
+            ByteBuffer buffer = DirectBufferManager.borrowSmallBuffer();
+            buffer.put(compressed, 0, compressedSize);
+            return buffer;
+        }
+
+        private void writeBatch(int start, int length, boolean isEnd) {
+            ByteBuffer compressedHeaderBuffer = getCompressedHeaderBuffer(start, length);
+            compressedHeaderBuffer.flip();
+            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+            buffer.put(sortMessageBuffer, start, length);
+            buffer.flip();
+            asyncWrite(buffer, compressedHeaderBuffer, isEnd);
+            DirectBufferManager.returnBuffer(buffer);
+            DirectBufferManager.returnSmallBuffer(compressedHeaderBuffer);
+        }
+
         @Override
         public void run() {
             try {
-                System.out.println("start");
-
                 while (true) {
-                    System.out.println("take");
                     MessageWriterTask task = taskQueue.take();
-                    System.out.println("queue size: " + taskQueue.size());
+                    System.out.println("remaining queue size: " + taskQueue.size());
+
+                    if (messageBuffer == null) {
+                        messageBuffer = new byte[messageBufferSize * 2];
+                        sortMessageBuffer = new byte[messageBufferSize * 2];
+                        System.arraycopy(task.getMessageBuffer(), 0, messageBuffer, messageBufferSize, messageBufferSize);
+                        continue;
+                    }
 
                     if (task.isEnd()) {
                         byte[] endMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
@@ -88,50 +118,19 @@ public class MessageWriter {
                         sortMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
                         ByteUtils.countSort(messageBuffer, sortMessageBuffer);
 
-
                         MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize + task.getBufferLimit());
 
-                        ByteBuffer noDataBuffer = DirectBufferManager.borrowBuffer();
-                        for (int i = 0; i < messageBatchSize; i++) {
-                            noDataBuffer.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize));
-                            noDataBuffer.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8));
-                        }
-                        noDataBuffer.flip();
+                        writeBatch(0, messageBufferSize, false);
 
-                        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-                        buffer.put(sortMessageBuffer, 0, messageBufferSize);
-                        buffer.flip();
-                        asyncWrite(buffer, noDataBuffer, false);
-                        DirectBufferManager.returnBuffer(buffer);
-                        DirectBufferManager.returnBuffer(noDataBuffer);
+                        writeBatch(messageBufferSize, task.getBufferLimit(), true);
 
-
-                        ByteBuffer noDataBuffer1 = DirectBufferManager.borrowBuffer();
-                        for (int i = 0; i < task.getBufferLimit() / Constants.Message_Size; i++) {
-                            noDataBuffer1.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + messageBufferSize));
-                            noDataBuffer1.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8 + messageBufferSize));
-                        }
-                        noDataBuffer1.flip();
-
-                        buffer = DirectBufferManager.borrowBuffer();
-                        buffer.put(sortMessageBuffer, messageBufferSize, task.getBufferLimit());
-                        buffer.flip();
-                        asyncWrite(buffer, noDataBuffer1, true);
-                        DirectBufferManager.returnBuffer(buffer);
-                        DirectBufferManager.returnBuffer(noDataBuffer1);
-
+                        System.out.println("header size " + headerByteWritten);
+                        System.exit(1);
                         DirectBufferManager.changeToRead();
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();
                         }
                         break;
-                    }
-
-                    if (messageBuffer == null) {
-                        messageBuffer = new byte[messageBufferSize * 2];
-                        sortMessageBuffer = new byte[messageBufferSize * 2];
-                        System.arraycopy(task.getMessageBuffer(), 0, messageBuffer, messageBufferSize, messageBufferSize);
-                        continue;
                     }
 
                     long totalStart = System.currentTimeMillis();
@@ -141,77 +140,17 @@ public class MessageWriter {
                     ByteUtils.countSort(messageBuffer, sortMessageBuffer);
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
-
-                    int[] tData = new int[messageBatchSize];
-                    int[] aData = new int[messageBatchSize];
-                    ByteBuffer tmpbuffer = ByteBuffer.allocate(messageBatchSize * 4);
-
-                    ByteBuffer noDataBuffer = DirectBufferManager.borrowBuffer();
-                    for (int i = 0; i < messageBatchSize; i++) {
-                        int t = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize);
-                        int a = (int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8);
-                        System.out.println(t + " " + a);
-                        noDataBuffer.putInt(t);
-                        noDataBuffer.putInt(a);
-                        tData[i] = t;
-                        aData[i] = a;
-                        tmpbuffer.putInt(a);
-                    }
-
-                    IntegratedIntCompressor iic = new IntegratedIntCompressor();
-
-                    long start = System.currentTimeMillis();
-                    int[] compressed = iic.compress(tData);
-                    System.out.println(System.currentTimeMillis() - start);
-                    System.out.println("compressed from " + tData.length * 4 / 1024 + "KB to " + compressed.length * 4 / 1024 + "KB");
-                    start = System.currentTimeMillis();
-                    iic.uncompress(compressed);
-                    System.out.println(System.currentTimeMillis() - start);
-
-                    start = System.currentTimeMillis();
-
-                    IntCompressor ic = new IntCompressor();
-
-                    int[] compressed1 = ic.compress(aData);
-                    System.out.println(System.currentTimeMillis() - start);
-                    System.out.println("compressed from " + aData.length * 4 / 1024 + "KB to " + compressed1.length * 4 / 1024 + "KB");
-                    start = System.currentTimeMillis();
-                    iic.uncompress(compressed);
-                    System.out.println(System.currentTimeMillis() - start);
-
-                    Deflater deflater = new Deflater(1);
-                    deflater.setInput(tmpbuffer.array());
-                    deflater.finish();
-                    byte[] output = new byte[messageBatchSize * 4];
-
-                    long s = System.currentTimeMillis();
-                    int compressedSize = deflater.deflate(output);
-                    System.out.println(System.currentTimeMillis() - s);
-                    System.out.println(compressedSize);
-
-
-                    System.exit(1);
-                    noDataBuffer.flip();
-
-//                    LinearExampleChecker.check(sortMessageBuffer);
-
-
                     MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize);
 
+
                     long writeStart = System.currentTimeMillis();
-
-                    ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-                    buffer.put(sortMessageBuffer, 0, messageBufferSize);
-                    buffer.flip();
-                    asyncWrite(buffer, noDataBuffer, false);
-                    DirectBufferManager.returnBuffer(buffer);
-                    DirectBufferManager.returnBuffer(noDataBuffer);
-
+                    writeBatch(0, messageBufferSize, false);
                     System.out.println("write time:" + (System.currentTimeMillis() - writeStart));
 
                     byte[] tmp = messageBuffer;
                     messageBuffer = sortMessageBuffer;
                     sortMessageBuffer = tmp;
+
                     System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
 
                 }
@@ -223,68 +162,45 @@ public class MessageWriter {
             System.out.println("end");
         }
 
-
-        private void asyncWrite(ByteBuffer buffer, ByteBuffer noDataByteBuffer, boolean end) {
-            System.out.println(noDataByteBuffer.limit());
-            System.out.println(noDataByteBuffer.position());
+        private void asyncWrite(ByteBuffer buffer, ByteBuffer noDataBuffer, boolean end) {
+            System.out.println(noDataBuffer.limit());
+            System.out.println(noDataBuffer.position());
 
             pendingAsyncWrite.incrementAndGet();
             pendingAsyncWrite.incrementAndGet();
+            messagesChannel.write(buffer, byteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+            messagesNoDataChannel.write(noDataBuffer, headerByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
 
-            messagesChannel.write(buffer, totalByteWritten, messagesChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
-                @Override
-                public void completed(Integer result, AsynchronousFileChannel attachment) {
-                    try {
-                        pendingAsyncWrite.decrementAndGet();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            byteWritten += buffer.limit();
+            headerByteWritten += noDataBuffer.limit();
 
-                }
-
-                @Override
-                public void failed(Throwable t, AsynchronousFileChannel attachment) {
-                    t.printStackTrace();
-                    System.exit(1);
-                }
-            });
-
-            messagesWithoutDataChannel.write(noDataByteBuffer, noDataTotalByteWritten, messagesWithoutDataChannel, new CompletionHandler<Integer, AsynchronousFileChannel>() {
-                @Override
-                public void completed(Integer result, AsynchronousFileChannel attachment) {
-                    try {
-                        pendingAsyncWrite.decrementAndGet();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                }
-
-                @Override
-                public void failed(Throwable t, AsynchronousFileChannel attachment) {
-                    t.printStackTrace();
-                    System.exit(1);
-
-                }
-            });
-
-            totalByteWritten += buffer.limit();
-            noDataTotalByteWritten += noDataByteBuffer.limit();
-            long start = System.currentTimeMillis();
             if (end) {
+                long start = System.currentTimeMillis();
                 while (pendingAsyncWrite.get() != 0) {
                     if (System.currentTimeMillis() - start >= 20000) {
                         System.exit(1);
                     }
                 }
-
                 try {
                     messagesChannel.close();
-                    messagesWithoutDataChannel.close();
-
-                } catch (Exception e) {
+                    messagesNoDataChannel.close();
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+        }
+
+        private class WriteCompletionHandler implements CompletionHandler<Integer, AtomicInteger> {
+            @Override
+            public void completed(Integer result, AtomicInteger pendingAsyncWrite) {
+                pendingAsyncWrite.decrementAndGet();
+            }
+
+            @Override
+            public void failed(Throwable exc, AtomicInteger pendingAsyncWrite) {
+                System.out.println("write failed");
+                exc.printStackTrace();
+                System.exit(1);
             }
         }
     }

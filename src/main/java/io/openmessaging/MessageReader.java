@@ -7,9 +7,6 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 
 public class MessageReader {
     private AsynchronousFileChannel fileChannel;
@@ -17,9 +14,9 @@ public class MessageReader {
 
     public MessageReader() {
         try {
-            Path path = Paths.get(Constants.Messages);
+            Path path = Paths.get(Constants.Path);
             fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.READ);
-            Path nodata = Paths.get(Constants.Messages_Without_Data);
+            Path nodata = Paths.get(Constants.Header_Path);
 
             fileChannelNoData = AsynchronousFileChannel.open(nodata, StandardOpenOption.CREATE, StandardOpenOption.READ);
 
