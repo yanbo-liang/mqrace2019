@@ -161,11 +161,19 @@ public class MessageWriter {
                     System.out.println(System.currentTimeMillis()-start);
                     System.out.println("compressed from " + tData.length * 4 / 1024 + "KB to " + compressed.length * 4 / 1024 + "KB");
                      start = System.currentTimeMillis();
+                     iic.uncompress(compressed);
+                    System.out.println(System.currentTimeMillis()-start);
+
+                    start = System.currentTimeMillis();
+
                     IntCompressor ic = new IntCompressor();
 
                     int[] compressed1 = ic.compress(aData);
                     System.out.println(System.currentTimeMillis()-start);
                     System.out.println("compressed from " + aData.length * 4 / 1024 + "KB to " + compressed1.length * 4 / 1024 + "KB");
+                    start = System.currentTimeMillis();
+                    iic.uncompress(compressed);
+                    System.out.println(System.currentTimeMillis()-start);
                     System.exit(1);
                     noDataBuffer.flip();
 
