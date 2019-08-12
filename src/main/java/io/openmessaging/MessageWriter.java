@@ -105,8 +105,8 @@ public class MessageWriter {
                         DirectBufferManager.returnBuffer(noDataBuffer);
 
 
-                        ByteBuffer noDataBuffer1 =  DirectBufferManager.borrowBuffer();
-                        for (int i = 0; i < task.getBufferLimit()/Constants.Message_Size; i++) {
+                        ByteBuffer noDataBuffer1 = DirectBufferManager.borrowBuffer();
+                        for (int i = 0; i < task.getBufferLimit() / Constants.Message_Size; i++) {
                             noDataBuffer1.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + messageBufferSize));
                             noDataBuffer1.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8 + messageBufferSize));
                         }
@@ -141,7 +141,7 @@ public class MessageWriter {
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
 
-                    ByteBuffer noDataBuffer =  DirectBufferManager.borrowBuffer();
+                    ByteBuffer noDataBuffer = DirectBufferManager.borrowBuffer();
                     for (int i = 0; i < messageBatchSize; i++) {
                         noDataBuffer.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize));
                         noDataBuffer.putInt((int) ByteUtils.getLong(sortMessageBuffer, i * messageSize + 8));
@@ -198,6 +198,7 @@ public class MessageWriter {
                 @Override
                 public void failed(Throwable t, AsynchronousFileChannel attachment) {
                     t.printStackTrace();
+                    System.exit(1);
                 }
             });
 
@@ -215,6 +216,8 @@ public class MessageWriter {
                 @Override
                 public void failed(Throwable t, AsynchronousFileChannel attachment) {
                     t.printStackTrace();
+                    System.exit(1);
+
                 }
             });
 
