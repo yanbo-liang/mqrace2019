@@ -3,7 +3,6 @@ package io.openmessaging;
 import java.nio.ByteBuffer;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 public class PartitionIndex {
     private static NavigableMap<Integer, PartitionInfo> partitionMap = new TreeMap<>();

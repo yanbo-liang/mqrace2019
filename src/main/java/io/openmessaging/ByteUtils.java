@@ -1,7 +1,5 @@
 package io.openmessaging;
 
-import com.sun.tools.javac.util.Bits;
-
 import java.nio.ByteBuffer;
 
 public class ByteUtils {
