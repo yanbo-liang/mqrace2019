@@ -68,7 +68,11 @@ public class DirectBufferManager {
         for (ByteBuffer buffer : tmp) {
             ((DirectBuffer) buffer).cleaner().clean();
         }
-
+        List<ByteBuffer> tmp1 = new ArrayList<>();
+        smallBufferQueue.drainTo(tmp1);
+        for (ByteBuffer buffer : tmp1) {
+            ((DirectBuffer) buffer).cleaner().clean();
+        }
         long queueSize = Constants.Direct_Memory_Size / Constants.Direct_Read_Buffer_Size;
 
         for (long i = 0; i < queueSize; i++) {

@@ -43,8 +43,17 @@ public class MessageReader {
 
     public ByteBuffer read(long tMin, long tMax) {
         long s = System.currentTimeMillis();
-        long start = MessageIndex.readStartInclusive(tMin);
-        long end = MessageIndex.readEndExclusive(tMax);
+//        long start = MessageIndex.readStartInclusive(tMin);
+////        long end = MessageIndex.readEndExclusive(tMax);
+
+        long start = PartitionIndex.a((int)tMin);
+        long end = PartitionIndex.b((int)tMax);
+        if (start==-1||end==-1){
+            return null;
+        }
+        if (start>=end){
+            return null;
+        }
         System.out.println("index:" + (System.currentTimeMillis() - s));
 
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();

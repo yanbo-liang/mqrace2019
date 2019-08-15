@@ -6,7 +6,10 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
@@ -26,8 +29,8 @@ public class MessageWriter {
     private byte[] messageBuffer;
     private byte[] sortMessageBuffer;
 
-    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
-    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 / 2);
+//    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
+//    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 / 2);
 
     private long byteWritten = 0;
     private long headerByteWritten = 0;
@@ -51,7 +54,7 @@ public class MessageWriter {
         }
     }
 
-    public void flushAndShutDown(byte[] messageBuffer, int bufferLimit) {
+    public void flushAndShutDown(ByteBuffer messageBuffer, int bufferLimit) {
         try {
             write(MessageWriterTask.createEndTask(messageBuffer, bufferLimit));
             System.out.println("send end");
@@ -67,31 +70,36 @@ public class MessageWriter {
 
     private class MessageWriterJob implements Runnable {
 
-        private ByteBuffer getCompressedHeaderBuffer(int start, int length) {
-            unCompressedHeaderBuffer.clear();
-            for (int i = start; i < length; i += messageSize) {
-                int t = (int) ByteUtils.getLong(sortMessageBuffer, i);
-                int a = (int) ByteUtils.getLong(sortMessageBuffer, i + 8);
-                unCompressedHeaderBuffer.putInt(t);
-                unCompressedHeaderBuffer.putInt(a-t);
-            }
-            byte[] uncompressed = unCompressedHeaderBuffer.array();
-            byte[] compressed = compressedHeaderBuffer.array();
-            int compressedSize = CompressUtil.compress(uncompressed, 0, uncompressed.length, compressed, 0, compressed.length);
-            ByteBuffer buffer = DirectBufferManager.borrowSmallBuffer();
-            buffer.put(compressed, 0, compressedSize);
-            return buffer;
-        }
+//        private ByteBuffer getCompressedHeaderBuffer(int start, int length) {
+//            unCompressedHeaderBuffer.clear();
+//            for (int i = start; i < length; i += messageSize) {
+//                int t = (int) ByteUtils.getLong(sortMessageBuffer, i);
+//                int a = (int) ByteUtils.getLong(sortMessageBuffer, i + 8);
+//                unCompressedHeaderBuffer.putInt(t);
+//                unCompressedHeaderBuffer.putInt(a-t);
+//            }
+//            byte[] uncompressed = unCompressedHeaderBuffer.array();
+//            byte[] compressed = compressedHeaderBuffer.array();
+//            int compressedSize = CompressUtil.compress(uncompressed, 0, uncompressed.length, compressed, 0, compressed.length);
+//            ByteBuffer buffer = DirectBufferManager.borrowSmallBuffer();
+//            buffer.put(compressed, 0, compressedSize);
+//            return buffer;
+//        }
 
         private void writeBatch(int start, int length, boolean isEnd) {
-            ByteBuffer compressedHeaderBuffer = getCompressedHeaderBuffer(start, length);
-            compressedHeaderBuffer.flip();
+//            ByteBuffer compressedHeaderBuffer = getCompressedHeaderBuffer(start, length);
+//            compressedHeaderBuffer.flip();
+//            DirectBufferManager.returnSmallBuffer(compressedHeaderBuffer);
+
             ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             buffer.put(sortMessageBuffer, start, length);
             buffer.flip();
-            asyncWrite(buffer, compressedHeaderBuffer, isEnd);
+
+            long a =System.currentTimeMillis();
+            PartitionIndex.index(buffer);
+            System.out.println(System.currentTimeMillis()-a);
+            asyncWrite(buffer, null, isEnd);
             DirectBufferManager.returnBuffer(buffer);
-            DirectBufferManager.returnSmallBuffer(compressedHeaderBuffer);
         }
 
         @Override
@@ -104,27 +112,27 @@ public class MessageWriter {
                     if (messageBuffer == null) {
                         messageBuffer = new byte[messageBufferSize * 2];
                         sortMessageBuffer = new byte[messageBufferSize * 2];
-                        System.arraycopy(task.getMessageBuffer(), 0, messageBuffer, messageBufferSize, messageBufferSize);
+                        System.arraycopy(task.getMessageBuffer().array(), 0, messageBuffer, messageBufferSize, messageBufferSize);
                         continue;
                     }
 
                     if (task.isEnd()) {
                         byte[] endMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
                         System.arraycopy(messageBuffer, messageBufferSize, endMessageBuffer, 0, messageBufferSize);
-                        System.arraycopy(task.getMessageBuffer(), 0, endMessageBuffer, messageBufferSize, task.getBufferLimit());
+                        System.arraycopy(task.getMessageBuffer().array(), 0, endMessageBuffer, messageBufferSize, task.getBufferLimit());
                         messageBuffer = endMessageBuffer;
                         sortMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
-                        ByteUtils.countSort(messageBuffer, sortMessageBuffer);
+                        ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
 
-                        MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize + task.getBufferLimit());
+//                        MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize + task.getBufferLimit());
 
                         writeBatch(0, messageBufferSize, false);
 
                         writeBatch(messageBufferSize, task.getBufferLimit(), true);
 
                         System.out.println("header size " + headerByteWritten);
-                        System.exit(1);
                         DirectBufferManager.changeToRead();
+                        PartitionIndex.complete();
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();
                         }
@@ -134,11 +142,11 @@ public class MessageWriter {
                     long totalStart = System.currentTimeMillis();
 
                     long mergeStart = System.currentTimeMillis();
-                    System.arraycopy(task.getMessageBuffer(), 0, messageBuffer, 0, messageBufferSize);
-                    ByteUtils.countSort(messageBuffer, sortMessageBuffer);
+                    System.arraycopy(task.getMessageBuffer().array(), 0, messageBuffer, 0, messageBufferSize);
+                    ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
-                    MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize);
+//                    MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize);
 
 
                     long writeStart = System.currentTimeMillis();
@@ -161,16 +169,14 @@ public class MessageWriter {
         }
 
         private void asyncWrite(ByteBuffer buffer, ByteBuffer noDataBuffer, boolean end) {
-            System.out.println(noDataBuffer.limit());
-            System.out.println(noDataBuffer.position());
 
             pendingAsyncWrite.incrementAndGet();
-            pendingAsyncWrite.incrementAndGet();
+//            pendingAsyncWrite.incrementAndGet();
             messagesChannel.write(buffer, byteWritten, pendingAsyncWrite, new WriteCompletionHandler());
-            headerChannel.write(noDataBuffer, headerByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+//            headerChannel.write(noDataBuffer, headerByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
 
             byteWritten += buffer.limit();
-            headerByteWritten += noDataBuffer.limit();
+//            headerByteWritten += noDataBuffer.limit();
 
             if (end) {
                 long start = System.currentTimeMillis();
@@ -181,7 +187,7 @@ public class MessageWriter {
                 }
                 try {
                     messagesChannel.close();
-                    headerChannel.close();
+//                    headerChannel.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
