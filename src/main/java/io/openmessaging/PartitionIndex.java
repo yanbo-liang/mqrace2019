@@ -5,36 +5,26 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public class PartitionIndex {
-    private static NavigableMap<Integer, PartitionInfo> partitionMap = new TreeMap<>();
-    private static int min = 0, max = 1999;
-    private static int aMin = Integer.MAX_VALUE, aMax = Integer.MIN_VALUE;
+    private static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
+    private static long tMin = 0, tMax = 1999;
+    private static long aMin = Long.MAX_VALUE, aMax = Long.MIN_VALUE;
     private static long startPosition = 0, totalByteIndexed = 0;
-    private static int count = 0;
     private static long sum = 0;
+    private static int count = 0;
 
-    private static ByteBuffer tmp = ByteBuffer.allocate(2000 * 10 * 4);
-    private static ByteBuffer compressed = ByteBuffer.allocate(1024 * 1024 * 1024);
 
-    private static void findRangeForT(int t) {
-        while (!(min <= t && t <= max)) {
-            min += 2000;
-            max += 2000;
-        }
+    private static void findRangeForT(long t) {
+        tMin = (t / 2000) * 2000;
+        tMax = tMin + 1999;
     }
-
-    static int compressd = 0;
 
     public synchronized static void index(ByteBuffer buffer) {
         int i = 0;
         while (i < buffer.limit()) {
-            int t = (int) buffer.getLong(i);
-            int a = (int) buffer.getLong(i + 8);
-//            tmp.putInt(a-t);
+            long t = buffer.getLong(i);
+            long a = buffer.getLong(i + 8);
 
-            if (min <= t && t <= max) {
-//                tmp.putInt(t - min);
-            tmp.putInt(a-min);
-
+            if (tMin <= t && t <= tMax) {
                 if (a < aMin) {
                     aMin = a;
                 }
@@ -46,19 +36,15 @@ public class PartitionIndex {
                 totalByteIndexed += Constants.Message_Size;
             } else {
                 if (aMin != Integer.MAX_VALUE) {
-                    partitionMap.put(min / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
+                    partitionMap.put(tMin / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
                     startPosition = totalByteIndexed;
-                    int A = CompressUtil.compress(tmp, compressed);
-                    compressd += A;
                 }
                 findRangeForT(t);
                 aMin = Integer.MAX_VALUE;
                 aMax = Integer.MIN_VALUE;
                 count = 0;
                 sum = 0;
-                tmp.clear();
-//                tmp.putInt(t - min);
-                tmp.putInt(a-min);
+
                 if (a < aMin) {
                     aMin = a;
                 }
@@ -74,36 +60,31 @@ public class PartitionIndex {
     }
 
     public synchronized static void complete() {
-        partitionMap.put(min / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
-        System.out.println("total Compressed " + compressd);
+        partitionMap.put(tMin / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
     }
 
     public synchronized static long a(long tMin) {
-        int startPartition = (int) tMin / 2000;
-        return partitionMap.ceilingEntry(startPartition).getValue().start;
+        return partitionMap.ceilingEntry(tMin / 2000).getValue().start;
     }
 
     public synchronized static long b(long tMax) {
-        int endPartition = (int) tMax / 2000;
-        return partitionMap.floorEntry(endPartition).getValue().end;
+        return partitionMap.floorEntry(tMax / 2000).getValue().end;
 
     }
 
-    public synchronized static NavigableMap<Integer, PartitionInfo> bc(long aMin, long aMax, long tMin, long tMax) {
-        return partitionMap.subMap((int) tMin / 2000, true, (int) tMax / 2000, true);
+    public synchronized static NavigableMap<Long, PartitionInfo> bc( long tMin, long tMax) {
+        return partitionMap.subMap(tMin / 2000, true, tMax / 2000, true);
     }
 
     public static class PartitionInfo {
-        int low;
-        int high;
-        long start;
-        long end;
+        long aMin, aMax;
+        long start, end;
         int count;
         long sum;
 
-        PartitionInfo(int low, int high, long start, long end, int count, long sum) {
-            this.low = low;
-            this.high = high;
+        PartitionInfo(long aMin, long aMax, long start, long end, int count, long sum) {
+            this.aMin = aMin;
+            this.aMax = aMax;
             this.start = start;
             this.end = end;
             this.count = count;

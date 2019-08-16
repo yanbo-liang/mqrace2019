@@ -81,7 +81,7 @@ public class MessageReader {
 
     public ByteBuffer readMissedPartition(List<PartitionIndex.PartitionInfo> partitionInfoList) {
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-buffer.limit(0);
+        buffer.limit(0);
         Callback callback = new Callback();
         for (int i = 0; i < partitionInfoList.size(); i++) {
             PartitionIndex.PartitionInfo partitionInfo = partitionInfoList.get(i);

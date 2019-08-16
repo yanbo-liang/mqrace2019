@@ -134,14 +134,14 @@ public class DefaultMessageStoreImpl extends MessageStore {
         long total = 0;
         int count = 0;
         List<PartitionIndex.PartitionInfo> missedPartitionInfo = new ArrayList<>();
-        NavigableMap<Integer, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.bc(aMin, aMax, tMin, tMax);
-        for (Map.Entry<Integer, PartitionIndex.PartitionInfo> entry : partitionMap.entrySet()) {
-            Integer partitionIndex = entry.getKey();
+        NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.bc( tMin, tMax);
+        for (Map.Entry<Long, PartitionIndex.PartitionInfo> entry : partitionMap.entrySet()) {
+            Long partitionIndex = entry.getKey();
             long tLow = partitionIndex * 2000;
             long tHigh = tLow + 1999;
             PartitionIndex.PartitionInfo partitionInfo = entry.getValue();
             if (tMin <= tLow && tHigh <= tMax) {
-                if (aMin <= partitionInfo.low && partitionInfo.high <= aMax) {
+                if (aMin <= partitionInfo.aMin && partitionInfo.aMax <= aMax) {
                     total += partitionInfo.sum;
                     count += partitionInfo.count;
                     continue;
