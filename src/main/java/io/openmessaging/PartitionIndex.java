@@ -40,8 +40,8 @@ public class PartitionIndex {
                     startPosition = totalByteIndexed;
                 }
                 findRangeForT(t);
-                aMin = Integer.MAX_VALUE;
-                aMax = Integer.MIN_VALUE;
+                aMin = Long.MAX_VALUE;
+                aMax = Long.MIN_VALUE;
                 count = 0;
                 sum = 0;
 
@@ -64,6 +64,7 @@ public class PartitionIndex {
     }
 
     public synchronized static long a(long tMin) {
+        System.out.println("map Size "+partitionMap.size());
         return partitionMap.ceilingEntry(tMin / 2000).getValue().start;
     }
 

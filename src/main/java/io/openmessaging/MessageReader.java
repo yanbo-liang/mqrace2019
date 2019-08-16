@@ -53,6 +53,9 @@ public class MessageReader {
 
         long start = PartitionIndex.a(tMin);
         long end = PartitionIndex.b(tMax);
+        System.out.println(start + " " + end);
+
+
         if (start == -1 || end == -1) {
             return null;
         }

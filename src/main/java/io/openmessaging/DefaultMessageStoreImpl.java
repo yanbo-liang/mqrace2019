@@ -102,6 +102,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         ByteBuffer buffer = reader.read(tMin, tMax);
         List<Message> messageList = new ArrayList<>();
         if (buffer == null) {
+            System.out.println("buffer is null");
             return messageList;
         }
         buffer.flip();
