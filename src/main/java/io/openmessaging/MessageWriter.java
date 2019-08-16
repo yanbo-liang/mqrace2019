@@ -13,10 +13,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
-    private AsynchronousFileChannel messagesChannel;
-    private AsynchronousFileChannel headerChannel;
+    private AsynchronousFileChannel fileChannel;
 
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private BlockingQueue<MessageWriterTask> taskQueue = new LinkedBlockingQueue<>(5);
 
@@ -32,18 +31,16 @@ public class MessageWriter {
 //    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
 //    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 / 2);
 
-    private long byteWritten = 0;
-    private long headerByteWritten = 0;
+    private long totalByteWritten = 0;
 
     public MessageWriter() {
         try {
-            messagesChannel = AsynchronousFileChannel.open(Paths.get(Constants.Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            fileChannel = AsynchronousFileChannel.open(Paths.get(Constants.Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
-        executorService.execute(new MessageWriterJob());
+        executor.execute(new MessageWriterJob());
     }
 
     public void write(MessageWriterTask messageWriterTask) {
@@ -61,7 +58,7 @@ public class MessageWriter {
             synchronized (MessageWriter.class) {
                 MessageWriter.class.wait();
             }
-            executorService.shutdown();
+            executor.shutdown();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -98,7 +95,7 @@ public class MessageWriter {
             long a =System.currentTimeMillis();
             PartitionIndex.index(buffer);
             System.out.println(System.currentTimeMillis()-a);
-            asyncWrite(buffer, null, isEnd);
+            asyncWrite(buffer, isEnd);
             DirectBufferManager.returnBuffer(buffer);
         }
 
@@ -124,15 +121,15 @@ public class MessageWriter {
                         sortMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
                         ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
 
-//                        MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize + task.getBufferLimit());
 
                         writeBatch(0, messageBufferSize, false);
 
                         writeBatch(messageBufferSize, task.getBufferLimit(), true);
 
-                        System.out.println("header size " + headerByteWritten);
                         DirectBufferManager.changeToRead();
                         PartitionIndex.complete();
+
+                        System.exit(1);
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();
                         }
@@ -145,8 +142,6 @@ public class MessageWriter {
                     System.arraycopy(task.getMessageBuffer().array(), 0, messageBuffer, 0, messageBufferSize);
                     ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
-
-//                    MessageIndex.buildIndex(sortMessageBuffer, messageBufferSize);
 
 
                     long writeStart = System.currentTimeMillis();
@@ -168,15 +163,12 @@ public class MessageWriter {
             System.out.println("end");
         }
 
-        private void asyncWrite(ByteBuffer buffer, ByteBuffer noDataBuffer, boolean end) {
+        private void asyncWrite(ByteBuffer buffer, boolean end) {
 
             pendingAsyncWrite.incrementAndGet();
-//            pendingAsyncWrite.incrementAndGet();
-            messagesChannel.write(buffer, byteWritten, pendingAsyncWrite, new WriteCompletionHandler());
-//            headerChannel.write(noDataBuffer, headerByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+            fileChannel.write(buffer, totalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
 
-            byteWritten += buffer.limit();
-//            headerByteWritten += noDataBuffer.limit();
+            totalByteWritten += buffer.limit();
 
             if (end) {
                 long start = System.currentTimeMillis();
@@ -186,7 +178,7 @@ public class MessageWriter {
                     }
                 }
                 try {
-                    messagesChannel.close();
+                    fileChannel.close();
 //                    headerChannel.close();
                 } catch (IOException e) {
                     e.printStackTrace();

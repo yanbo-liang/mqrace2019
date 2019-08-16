@@ -1,8 +1,6 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -14,18 +12,22 @@ public class PartitionIndex {
     private static int count = 0;
     private static long sum = 0;
 
+    private static ByteBuffer tmp = ByteBuffer.allocate(2000 * 10 * 4);
+    private static ByteBuffer compressed = ByteBuffer.allocate(1024 * 1024 * 1024);
+
     private static void findRangeForT(int t) {
         while (!(min <= t && t <= max)) {
             min += 2000;
             max += 2000;
         }
     }
-
+    static int compressd=0;
     public synchronized static void index(ByteBuffer buffer) {
         int i = 0;
         while (i < buffer.limit()) {
             int t = (int) buffer.getLong(i);
             int a = (int) buffer.getLong(i + 8);
+            tmp.putInt(a-t);
             if (min <= t && t <= max) {
                 if (a < aMin) {
                     aMin = a;
@@ -40,12 +42,14 @@ public class PartitionIndex {
                 if (aMin != Integer.MAX_VALUE) {
                     partitionMap.put(min / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
                     startPosition = totalByteIndexed;
+                    compressd +=  CompressUtil.compress(tmp, compressed);
                 }
                 findRangeForT(t);
                 aMin = Integer.MAX_VALUE;
                 aMax = Integer.MIN_VALUE;
                 count = 0;
                 sum = 0;
+                tmp.clear();
                 if (a < aMin) {
                     aMin = a;
                 }
@@ -62,6 +66,7 @@ public class PartitionIndex {
 
     public synchronized static void complete() {
         partitionMap.put(min / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
+        System.out.println("total Compressed "+compressd);
     }
 
     public synchronized static long a(long tMin) {
@@ -76,14 +81,6 @@ public class PartitionIndex {
     }
 
     public synchronized static NavigableMap<Integer, PartitionInfo> bc(long aMin, long aMax, long tMin, long tMax) {
-//        List<PartitionInfo> r = new ArrayList<>();
-//        Integer startPartition = partitionMap.ceilingEntry().getKey();
-//        Integer endPartition = partitionMap.floorEntry(.getKey();
-//        for (int i = startPartition; i <= endPartition; i++) {
-//            PartitionInfo partitionInfo = partitionMap.get(i);
-//            r.add(partitionInfo);
-//
-//        }
         return partitionMap.subMap((int) tMin / 2000, true, (int) tMax / 2000, true);
     }
 
