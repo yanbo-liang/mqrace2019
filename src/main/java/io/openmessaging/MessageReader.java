@@ -12,15 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageReader {
     private AsynchronousFileChannel fileChannel;
-    private AsynchronousFileChannel fileChannelNoData;
 
     public MessageReader() {
         try {
             Path path = Paths.get(Constants.Path);
             fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.READ);
-            Path nodata = Paths.get(Constants.Header_Path);
-
-            fileChannelNoData = AsynchronousFileChannel.open(nodata, StandardOpenOption.CREATE, StandardOpenOption.READ);
 
         } catch (IOException e) {
             e.printStackTrace();

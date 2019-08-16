@@ -27,7 +27,9 @@ public class PartitionIndex {
         while (i < buffer.limit()) {
             int t = (int) buffer.getLong(i);
             int a = (int) buffer.getLong(i + 8);
-            tmp.putInt(a-t);
+//            tmp.putInt(a-t);
+                        tmp.putInt(t);
+
             if (min <= t && t <= max) {
                 if (a < aMin) {
                     aMin = a;
