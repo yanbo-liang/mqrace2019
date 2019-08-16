@@ -5,7 +5,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 public class CompressUtil {
-    private static Deflater compresser = new Deflater(5);
+    private static Deflater compresser = new Deflater(1);
     private static Inflater uncompresser = new Inflater();
 
 //    public static int compress(byte[] uncompressed, int uStart, int uLength, byte[] compressed, int cStart, int cLength) {
@@ -16,6 +16,7 @@ public class CompressUtil {
 //    }
     public static int compress(ByteBuffer uncompressed, ByteBuffer compressed) {
         compresser.reset();
+        compresser.setStrategy(0);
         uncompressed.flip();
         compresser.setInput(uncompressed.array(), 0, uncompressed.limit());
         compresser.finish();

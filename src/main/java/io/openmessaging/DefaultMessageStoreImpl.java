@@ -76,7 +76,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
 
     @Override
-    synchronized List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
 
         if (!init.get()) {

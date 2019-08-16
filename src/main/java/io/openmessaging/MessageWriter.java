@@ -129,7 +129,6 @@ public class MessageWriter {
                         DirectBufferManager.changeToRead();
                         PartitionIndex.complete();
 
-                        System.exit(1);
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();
                         }

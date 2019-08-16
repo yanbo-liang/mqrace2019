@@ -21,16 +21,20 @@ public class PartitionIndex {
             max += 2000;
         }
     }
-    static int compressd=0;
+
+    static int compressd = 0;
+
     public synchronized static void index(ByteBuffer buffer) {
         int i = 0;
         while (i < buffer.limit()) {
             int t = (int) buffer.getLong(i);
             int a = (int) buffer.getLong(i + 8);
 //            tmp.putInt(a-t);
-                        tmp.putInt(t);
 
             if (min <= t && t <= max) {
+//                tmp.putInt(t - min);
+            tmp.putInt(a-min);
+
                 if (a < aMin) {
                     aMin = a;
                 }
@@ -44,7 +48,8 @@ public class PartitionIndex {
                 if (aMin != Integer.MAX_VALUE) {
                     partitionMap.put(min / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
                     startPosition = totalByteIndexed;
-                    compressd +=  CompressUtil.compress(tmp, compressed);
+                    int A = CompressUtil.compress(tmp, compressed);
+                    compressd += A;
                 }
                 findRangeForT(t);
                 aMin = Integer.MAX_VALUE;
@@ -52,6 +57,8 @@ public class PartitionIndex {
                 count = 0;
                 sum = 0;
                 tmp.clear();
+//                tmp.putInt(t - min);
+                tmp.putInt(a-min);
                 if (a < aMin) {
                     aMin = a;
                 }
@@ -68,7 +75,7 @@ public class PartitionIndex {
 
     public synchronized static void complete() {
         partitionMap.put(min / 2000, new PartitionInfo(aMin, aMax, startPosition, totalByteIndexed, count, sum));
-        System.out.println("total Compressed "+compressd);
+        System.out.println("total Compressed " + compressd);
     }
 
     public synchronized static long a(long tMin) {
