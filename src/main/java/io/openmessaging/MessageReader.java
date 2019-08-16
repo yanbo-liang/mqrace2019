@@ -7,6 +7,8 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageReader {
     private AsynchronousFileChannel fileChannel;
@@ -26,12 +28,18 @@ public class MessageReader {
     }
 
     private class Callback implements CompletionHandler<Integer, ByteBuffer> {
+        private AtomicInteger totalRead;
+
+        public Callback() {
+
+        }
+
         @Override
         public void completed(Integer result, ByteBuffer attachment) {
-            synchronized (attachment) {
 
-                System.out.println("byte read " + result);
+            synchronized (attachment) {
                 attachment.notify();
+
             }
         }
 
@@ -39,6 +47,7 @@ public class MessageReader {
         public void failed(Throwable exc, ByteBuffer attachment) {
             exc.printStackTrace();
         }
+
     }
 
     public ByteBuffer read(long tMin, long tMax) {
@@ -46,12 +55,12 @@ public class MessageReader {
 //        long start = MessageIndex.readStartInclusive(tMin);
 ////        long end = MessageIndex.readEndExclusive(tMax);
 
-        long start = PartitionIndex.a((int)tMin);
-        long end = PartitionIndex.b((int)tMax);
-        if (start==-1||end==-1){
+        long start = PartitionIndex.a((int) tMin);
+        long end = PartitionIndex.b((int) tMax);
+        if (start == -1 || end == -1) {
             return null;
         }
-        if (start>=end){
+        if (start >= end) {
             return null;
         }
         System.out.println("index:" + (System.currentTimeMillis() - s));
@@ -73,111 +82,27 @@ public class MessageReader {
 
         return buffer;
     }
-    public ByteBuffer readNoData(long tMin, long tMax) {
-        long s = System.currentTimeMillis();
-        long start = MessageIndex.readStartInclusive(tMin)/Constants.Message_Size*8;
-        long end = MessageIndex.readEndExclusive(tMax)/Constants.Message_Size*8;
-        System.out.println("index:" + (System.currentTimeMillis() - s));
 
+    public ByteBuffer readMissedPartition(List<PartitionIndex.PartitionInfo> partitionInfoList) {
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-        buffer.limit((int) (end - start));
-        long r = System.currentTimeMillis();
+buffer.limit(0);
+        Callback callback = new Callback();
+        for (int i = 0; i < partitionInfoList.size(); i++) {
+            PartitionIndex.PartitionInfo partitionInfo = partitionInfoList.get(i);
+            buffer.limit((buffer.limit() + (int) (partitionInfo.end - partitionInfo.start)));
+            synchronized (buffer) {
 
-        synchronized (buffer) {
-            fileChannelNoData.read(buffer, start, buffer, new Callback());
-            try {
-                buffer.wait();
+                fileChannel.read(buffer, partitionInfo.start, buffer, callback);
+                try {
+                    buffer.wait();
 
-            } catch (Exception e) {
-                e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+
         }
-        System.out.println("read:" + (System.currentTimeMillis() - r));
 
         return buffer;
     }
 }
-
-//    static SortedMap<Long, Path> lowerMap = new TreeMap<>();
-//    static SortedMap<Long, Path> upperMap = new TreeMap<>();
-//
-//    public static List<ByteBuffer> read(long tMin, long tMax) {
-//        int lower = -1;
-//        int upper = -1;
-//        ArrayList<Map.Entry<Long, Path>> lowerList = new ArrayList<>(lowerMap.entrySet());
-//        ArrayList<Map.Entry<Long, Path>> upperList = new ArrayList<>(upperMap.entrySet());
-//        if (lowerList.get(0).getKey() > tMin) {
-//            lower = 0;
-//        } else if (upperList.get(upperList.size() - 1).getKey() < tMin){
-//            return new ArrayList<>();
-//
-//        }else {
-//            for (int i = 0; i < lowerList.size(); i++) {
-//                if (lowerList.get(i).getKey() <= tMin) {
-//                    lower = i;
-//                }
-//            }
-//        }
-//
-//
-//        if (upperList.get(upperList.size() - 1).getKey() < tMax) {
-//            upper = upperList.size() - 1;
-//        } else if (lowerList.get(0).getKey() > tMax) {
-//            return new ArrayList<>();
-//        } else {
-//            for (int i = upperList.size() - 1; i >= 0; i--) {
-//                if (upperList.get(i).getKey() >= tMax) {
-//                    upper = i;
-//                }
-//            }
-//        }
-//        List<AsynchronousFileChannel> channels = new ArrayList<>();
-//        List<ByteBuffer> buffers = new ArrayList<>();
-//        List<Future<Integer>> futures = new ArrayList<>();
-//        if (lower <= upper) {
-//            System.out.println(tMin + " " + tMax + " " + lower + " " + upper);
-//            for (int i = lower; i <= upper; i++) {
-//                Path path = lowerList.get(i).getValue();
-//
-//
-//
-//                try {
-//                    AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ);
-//                    ByteBuffer buffer = ByteBuffer.allocateDirect((int)fileChannel.size());
-//                    buffers.add(buffer);
-//                    Future<Integer> readFuture = fileChannel.read(buffer, 0);
-//                    futures.add(readFuture);
-//                    channels.add(fileChannel);
-//
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//
-//
-//            }
-//        }
-//        while (true) {
-//            if (check(futures)) {
-//                break;
-//
-//            }
-//        }
-//        for (AsynchronousFileChannel channel : channels) {
-//            try {
-//                channel.close();
-//
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        return buffers;
-//    }
-//
-//    public static <T> boolean check(List<Future<T>> futures) {
-//        for (Future future : futures) {
-//            if (!future.isDone()) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
