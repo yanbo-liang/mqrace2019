@@ -44,8 +44,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
         if (tLast.get()==null){
             tLast.set(0L);
         }
-        System.out.println(Thread.currentThread().getName());
-        if (message.getT() >= tLast.get()) {
+        System.out.println(Thread.currentThread().getName()+" "+message.getT());
+        if (message.getT() > tLast.get()) {
             tLast.set(message.getT());
         } else {
             System.out.println("bad t");
