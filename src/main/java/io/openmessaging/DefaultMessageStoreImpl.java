@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DefaultMessageStoreImpl extends MessageStore {
     private MessageWriter writer = new MessageWriter();
@@ -35,48 +36,68 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
+    private ThreadLocal<Long> tLast = new ThreadLocal<>();
+    private AtomicLong counter = new AtomicLong(0);
+
+    public DefaultMessageStoreImpl() {
+        tLast.set(0L);
+    }
+
     @Override
     void put(Message message) {
-        try {
-            concurrencyCounter.incrementAndGet();
-            int count = messageCount.getAndIncrement();
-            if (count < batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrencyCounter.decrementAndGet();
-
-            } else if (count == batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrencyCounter.decrementAndGet();
-
-                while (concurrencyCounter.get() != 0) {
-                }
-
-                writer.write(new MessageWriterTask(buffer));
-                buffer = ByteBuffer.allocate(batchSize * messageSize);
-                messageCount.getAndUpdate(x -> 0);
-                synchronized (this) {
-                    this.notifyAll();
-                }
-            } else if (count > batchSize - 1) {
-                concurrencyCounter.decrementAndGet();
-
-                synchronized (this) {
-                    this.wait();
-                }
-
-                concurrencyCounter.incrementAndGet();
-                count = messageCount.getAndIncrement();
-                messageToBuffer(count, message);
-                concurrencyCounter.decrementAndGet();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (message.getT() >= tLast.get()) {
+            tLast.set(message.getT());
+        } else {
+            System.out.println("bad t");
+            System.exit(-1);
         }
+        counter.incrementAndGet();
+        if (counter.get() > 100000) {
+            System.out.println("finish");
+
+            System.exit(-1);
+
+        }
+//        try {
+//            concurrencyCounter.incrementAndGet();
+//            int count = messageCount.getAndIncrement();
+//            if (count < batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrencyCounter.decrementAndGet();
+//
+//            } else if (count == batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrencyCounter.decrementAndGet();
+//
+//                while (concurrencyCounter.get() != 0) {
+//                }
+//
+//                writer.write(new MessageWriterTask(buffer));
+//                buffer = ByteBuffer.allocate(batchSize * messageSize);
+//                messageCount.getAndUpdate(x -> 0);
+//                synchronized (this) {
+//                    this.notifyAll();
+//                }
+//            } else if (count > batchSize - 1) {
+//                concurrencyCounter.decrementAndGet();
+//
+//                synchronized (this) {
+//                    this.wait();
+//                }
+//
+//                concurrencyCounter.incrementAndGet();
+//                count = messageCount.getAndIncrement();
+//                messageToBuffer(count, message);
+//                concurrencyCounter.decrementAndGet();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
 
     @Override
-     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+    List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
 
         if (!init.get()) {
@@ -135,7 +156,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         long total = 0;
         int count = 0;
         List<PartitionIndex.PartitionInfo> missedPartitionInfo = new ArrayList<>();
-        NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.bc( tMin, tMax);
+        NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.bc(tMin, tMax);
         for (Map.Entry<Long, PartitionIndex.PartitionInfo> entry : partitionMap.entrySet()) {
             Long partitionIndex = entry.getKey();
             long tLow = partitionIndex * 2000;
