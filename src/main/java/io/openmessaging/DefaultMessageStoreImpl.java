@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,63 +38,52 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
-    private ThreadLocal<Long> tLast = new ThreadLocal<>();
-    private AtomicLong counter = new AtomicLong(0);
+    private ConcurrentHashMap<Long, Thread> threadMap = new ConcurrentHashMap();
 
     @Override
     void put(Message message) {
-        if (tLast.get()==null){
-            tLast.set(0L);
-        }
-        System.out.println(Thread.currentThread().getName()+" "+message.getT());
-        if (message.getT() > tLast.get()) {
-            tLast.set(message.getT());
-        } else {
-            System.out.println("bad t");
-            System.exit(-1);
-        }
-        counter.incrementAndGet();
-        if (counter.get() > 10000) {
-            System.out.println("finish");
+        threadMap.put(Thread.currentThread().getId(), Thread.currentThread());
 
-            System.exit(-1);
+        try {
+            concurrencyCounter.incrementAndGet();
+            int count = messageCount.getAndIncrement();
 
+            if (count>10000){
+                System.out.println(threadMap.size());
+                System.exit(-1);
+            }
+            if (count < batchSize - 1) {
+                messageToBuffer(count, message);
+                concurrencyCounter.decrementAndGet();
+
+            } else if (count == batchSize - 1) {
+                messageToBuffer(count, message);
+                concurrencyCounter.decrementAndGet();
+
+                while (concurrencyCounter.get() != 0) {
+                }
+
+                writer.write(new MessageWriterTask(buffer));
+                buffer = ByteBuffer.allocate(batchSize * messageSize);
+                messageCount.getAndUpdate(x -> 0);
+                synchronized (this) {
+                    this.notifyAll();
+                }
+            } else if (count > batchSize - 1) {
+                concurrencyCounter.decrementAndGet();
+
+                synchronized (this) {
+                    this.wait();
+                }
+
+                concurrencyCounter.incrementAndGet();
+                count = messageCount.getAndIncrement();
+                messageToBuffer(count, message);
+                concurrencyCounter.decrementAndGet();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-//        try {
-//            concurrencyCounter.incrementAndGet();
-//            int count = messageCount.getAndIncrement();
-//            if (count < batchSize - 1) {
-//                messageToBuffer(count, message);
-//                concurrencyCounter.decrementAndGet();
-//
-//            } else if (count == batchSize - 1) {
-//                messageToBuffer(count, message);
-//                concurrencyCounter.decrementAndGet();
-//
-//                while (concurrencyCounter.get() != 0) {
-//                }
-//
-//                writer.write(new MessageWriterTask(buffer));
-//                buffer = ByteBuffer.allocate(batchSize * messageSize);
-//                messageCount.getAndUpdate(x -> 0);
-//                synchronized (this) {
-//                    this.notifyAll();
-//                }
-//            } else if (count > batchSize - 1) {
-//                concurrencyCounter.decrementAndGet();
-//
-//                synchronized (this) {
-//                    this.wait();
-//                }
-//
-//                concurrencyCounter.incrementAndGet();
-//                count = messageCount.getAndIncrement();
-//                messageToBuffer(count, message);
-//                concurrencyCounter.decrementAndGet();
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
     }
 
 
