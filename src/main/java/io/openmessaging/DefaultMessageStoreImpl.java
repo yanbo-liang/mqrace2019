@@ -52,7 +52,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.exit(-1);
         }
         counter.incrementAndGet();
-        if (counter.get() > 100) {
+        if (counter.get() > 10000) {
             System.out.println("finish");
 
             System.exit(-1);
