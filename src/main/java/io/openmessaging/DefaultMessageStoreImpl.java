@@ -39,12 +39,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private ThreadLocal<Long> tLast = new ThreadLocal<>();
     private AtomicLong counter = new AtomicLong(0);
 
-    public DefaultMessageStoreImpl() {
-        tLast.set(0L);
-    }
-
     @Override
     void put(Message message) {
+        if (tLast.get()==null){
+            tLast.set(0L);
+        }
+        System.out.println(Thread.currentThread().getName());
         if (message.getT() >= tLast.get()) {
             tLast.set(message.getT());
         } else {
@@ -52,7 +52,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.exit(-1);
         }
         counter.incrementAndGet();
-        if (counter.get() > 100000) {
+        if (counter.get() > 100) {
             System.out.println("finish");
 
             System.exit(-1);
