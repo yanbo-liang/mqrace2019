@@ -42,16 +42,9 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     void put(Message message) {
-        threadMap.put(Thread.currentThread().getId(), Thread.currentThread());
-
         try {
             concurrencyCounter.incrementAndGet();
             int count = messageCount.getAndIncrement();
-
-            if (count>10000){
-                System.out.println(threadMap.size());
-                System.exit(-1);
-            }
             if (count < batchSize - 1) {
                 messageToBuffer(count, message);
                 concurrencyCounter.decrementAndGet();
