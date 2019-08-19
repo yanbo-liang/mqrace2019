@@ -92,9 +92,7 @@ public class MessageWriter {
             buffer.put(sortMessageBuffer, start, length);
             buffer.flip();
 
-            long a =System.currentTimeMillis();
             PartitionIndex.index(buffer);
-            System.out.println(System.currentTimeMillis()-a);
             asyncWrite(buffer, isEnd);
             DirectBufferManager.returnBuffer(buffer);
         }
@@ -152,14 +150,11 @@ public class MessageWriter {
                     sortMessageBuffer = tmp;
 
                     System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
-
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                System.exit(1);
+                System.exit(-1);
             }
-
-            System.out.println("end");
         }
 
         private void asyncWrite(ByteBuffer buffer, boolean end) {
