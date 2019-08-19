@@ -102,7 +102,7 @@ public class MessageWriter {
             try {
                 while (true) {
                     MessageWriterTask task = taskQueue.take();
-                    System.out.println("remaining queue size: " + taskQueue.size());
+//                    System.out.println("remaining queue size: " + taskQueue.size());
 
                     if (messageBuffer == null) {
                         messageBuffer = new byte[messageBufferSize * 2];
@@ -138,18 +138,18 @@ public class MessageWriter {
                     long mergeStart = System.currentTimeMillis();
                     System.arraycopy(task.getMessageBuffer().array(), 0, messageBuffer, 0, messageBufferSize);
                     ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
-                    System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
+//                    System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
 
                     long writeStart = System.currentTimeMillis();
                     writeBatch(0, messageBufferSize, false);
-                    System.out.println("write time:" + (System.currentTimeMillis() - writeStart));
+//                    System.out.println("write time:" + (System.currentTimeMillis() - writeStart));
 
                     byte[] tmp = messageBuffer;
                     messageBuffer = sortMessageBuffer;
                     sortMessageBuffer = tmp;
 
-                    System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
+//                    System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
