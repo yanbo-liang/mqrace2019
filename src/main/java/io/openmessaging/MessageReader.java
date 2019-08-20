@@ -55,14 +55,10 @@ public class MessageReader {
         long end = PartitionIndex.b(tMax);
         System.out.println(start + " " + end);
 
-
-        if (start == -1 || end == -1) {
-            return null;
-        }
         if (start >= end) {
             return null;
         }
-        System.out.println("index:" + (System.currentTimeMillis() - s));
+        System.out.println("buildIndex:" + (System.currentTimeMillis() - s));
 
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         buffer.limit((int) (end - start));
