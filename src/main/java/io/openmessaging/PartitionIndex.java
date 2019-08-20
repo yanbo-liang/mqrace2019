@@ -22,6 +22,7 @@ public class PartitionIndex {
                     partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed));
                     startPosition = totalByteIndexed;
 
+                    tBuffer.flip();
                     int byteCompressed = CompressUtil.compress(tBuffer, tCompressed, totalByteCompressed);
                     totalByteCompressed += byteCompressed;
                     tBuffer.clear();

@@ -30,6 +30,8 @@ public class MessageWriter {
 
     private long totalByteWritten = 0;
 
+    private int times = 0;
+
     public MessageWriter() {
         try {
             fileChannel = AsynchronousFileChannel.open(Paths.get(Constants.Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -100,10 +102,16 @@ public class MessageWriter {
                         break;
                     }
 
+                    if (times++ > 4) {
+                        System.exit(-1);
+                    }
                     long totalStart = System.currentTimeMillis();
 
                     long mergeStart = System.currentTimeMillis();
+
                     System.arraycopy(task.getMessageBuffer().array(), 0, messageBuffer, 0, messageBufferSize);
+                    System.out.println("copy time: " + (System.currentTimeMillis() - mergeStart));
+
                     ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
                     System.out.println("merge time: " + (System.currentTimeMillis() - mergeStart));
 
