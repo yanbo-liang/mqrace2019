@@ -104,9 +104,7 @@ public class MessageWriter {
                         break;
                     }
 
-                    if (times++ > 50) {
-                        System.exit(-1);
-                    }
+
                     long totalStart = System.currentTimeMillis();
 
                     long mergeStart = System.currentTimeMillis();
