@@ -6,10 +6,7 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
@@ -17,7 +14,7 @@ public class MessageWriter {
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    private BlockingQueue<MessageWriterTask> taskQueue = new LinkedBlockingQueue<>(5);
+    private BlockingQueue<MessageWriterTask> taskQueue = new SynchronousQueue<>();
 
     private AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
 
