@@ -29,7 +29,7 @@ public class MessageWriter {
     private byte[] sortMessageBuffer;
 
     private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
-    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 );
+    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
 
     private long totalByteWritten = 0;
 
@@ -90,7 +90,9 @@ public class MessageWriter {
             buffer.put(sortMessageBuffer, start, length);
             buffer.flip();
 
+            long s = System.currentTimeMillis();
             PartitionIndex.index(buffer);
+            System.out.println("index " + (System.currentTimeMillis() - s));
             asyncWrite(buffer, isEnd);
             DirectBufferManager.returnBuffer(buffer);
         }
