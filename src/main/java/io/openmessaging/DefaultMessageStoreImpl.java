@@ -38,7 +38,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
-
     @Override
     void put(Message message) {
         try {
@@ -138,25 +137,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
         long start = System.currentTimeMillis();
         long total = 0;
         int count = 0;
-        List<PartitionIndex.PartitionInfo> missedPartitionInfo = new ArrayList<>();
-        NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.bc(tMin, tMax);
-        for (Map.Entry<Long, PartitionIndex.PartitionInfo> entry : partitionMap.entrySet()) {
-            Long partitionIndex = entry.getKey();
-            long tLow = partitionIndex * 2000;
-            long tHigh = tLow + 1999;
-            PartitionIndex.PartitionInfo partitionInfo = entry.getValue();
-            if (tMin <= tLow && tHigh <= tMax) {
-                if (aMin <= partitionInfo.aMin && partitionInfo.aMax <= aMax) {
-                    total += partitionInfo.sum;
-                    count += partitionInfo.count;
-                    continue;
-                }
-            }
-            missedPartitionInfo.add(partitionInfo);
-        }
-        System.out.println(partitionMap.size()+" "+missedPartitionInfo.size());
 
-        ByteBuffer buffer = reader.readMissedPartition(missedPartitionInfo);
+        ByteBuffer buffer = reader.read(tMin,tMax);
 
         buffer.flip();
 
