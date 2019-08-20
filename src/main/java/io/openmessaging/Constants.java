@@ -2,13 +2,13 @@ package io.openmessaging;
 
 public class Constants {
 
-    static int Message_Size = 24;
-    static String Message_Path = "/Users/yanbo.liang/test/message";
-    static String Header_Path = "/Users/yanbo.liang/test/header";
+//    static int Message_Size = 24;
+//    static String Message_Path = "/Users/yanbo.liang/test/message";
+//    static String Header_Path = "/Users/yanbo.liang/test/header";
 
-//    static int Message_Size = 50;
-//    static String Message_Path = "/alidata1/race2019/data/message";
-//    static String Header_Path = "/alidata1/race2019/data/header";
+    static int Message_Size = 50;
+    static String Message_Path = "/alidata1/race2019/data/message";
+    static String Header_Path = "/alidata1/race2019/data/header";
 
     static int Message_Batch_Size = 5000000;
 
