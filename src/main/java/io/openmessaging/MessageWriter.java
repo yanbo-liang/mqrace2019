@@ -67,36 +67,6 @@ public class MessageWriter {
 
     private class MessageWriterJob implements Runnable {
 
-//        private ByteBuffer getCompressedHeaderBuffer(int start, int length) {
-//            unCompressedHeaderBuffer.clear();
-//            for (int i = start; i < length; i += messageSize) {
-//                int a = (int) ByteUtils.getLong(sortMessageBuffer, i + 8);
-//                unCompressedHeaderBuffer.putInt(t);
-//            }
-//            byte[] uncompressed = unCompressedHeaderBuffer.array();
-//            byte[] compressed = compressedHeaderBuffer.array();
-//            int compressedSize = CompressUtil.compress(uncompressed, 0, uncompressed.length, compressed, 0, compressed.length);
-//            ByteBuffer buffer = DirectBufferManager.borrowSmallBuffer();
-//            buffer.put(compressed, 0, compressedSize);
-//            return buffer;
-//        }
-
-        private void writeBatch(int start, int length, boolean isEnd) {
-//            ByteBuffer compressedHeaderBuffer = getCompressedHeaderBuffer(start, length);
-//            compressedHeaderBuffer.flip();
-//            DirectBufferManager.returnSmallBuffer(compressedHeaderBuffer);
-
-            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-            buffer.put(sortMessageBuffer, start, length);
-            buffer.flip();
-
-            long s = System.currentTimeMillis();
-            PartitionIndex.buildIndex(buffer);
-            System.out.println("buildIndex " + (System.currentTimeMillis() - s));
-            asyncWrite(buffer, isEnd);
-            DirectBufferManager.returnBuffer(buffer);
-        }
-
         @Override
         public void run() {
             try {
@@ -155,6 +125,19 @@ public class MessageWriter {
                 e.printStackTrace();
                 System.exit(-1);
             }
+        }
+
+        private void writeBatch(int start, int length, boolean isEnd) {
+
+            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+            buffer.put(sortMessageBuffer, start, length);
+            buffer.flip();
+
+            long s = System.currentTimeMillis();
+            PartitionIndex.buildIndex(buffer);
+            System.out.println("buildIndex " + (System.currentTimeMillis() - s));
+            asyncWrite(buffer, isEnd);
+            DirectBufferManager.returnBuffer(buffer);
         }
 
         private void asyncWrite(ByteBuffer buffer, boolean end) {

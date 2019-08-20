@@ -5,16 +5,17 @@ import java.nio.ByteBuffer;
 
 public class CompressUtil {
 
-    public static int compress(long[] uncompressed, ByteBuffer compressed, int start) {
+    public static int compress(ByteBuffer uncompressed, ByteBuffer compressed, int start) {
         // 32 bit int, total bit length
         // 32 bit int, uncompressed length
         // 64 bit long, start value
-        compressed.putInt(4 + start, uncompressed.length);
-        compressed.putLong(8 + start, uncompressed[0]);
-        long last = uncompressed[0];
+        long first = uncompressed.getLong(0);
+        compressed.putInt(4 + start, uncompressed.limit() / 8);
+        compressed.putLong(8 + start, first);
+        long last = first;
         int pointer = 128;
-        for (int i = 1; i < uncompressed.length; i++) {
-            long current = uncompressed[i];
+        for (int i = 8; i < uncompressed.limit(); i += 8) {
+            long current = uncompressed.getLong(i);
             if (last == current) {
                 pointer++;
             } else if (last < current) {

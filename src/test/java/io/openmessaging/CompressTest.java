@@ -10,12 +10,14 @@ public class CompressTest {
         long s = System.currentTimeMillis();
         int start = 0;
         for (int j = 0; j < 3; j++) {
-            long[] input = new long[200000];
-            for (int i = 0; i < input.length; i++) {
-                input[i] = i;
+            ByteBuffer uncompressed = ByteBuffer.allocateDirect(200000 * 8);
+            long l = 0;
+            while (uncompressed.hasRemaining()) {
+                uncompressed.putLong(l++);
             }
+            uncompressed.flip();
             System.out.println(start);
-            int compressedByte = CompressUtil.compress(input, compressed, start);
+            int compressedByte = CompressUtil.compress(uncompressed, compressed, start);
             start += compressedByte;
         }
         System.out.println(System.currentTimeMillis() - s);

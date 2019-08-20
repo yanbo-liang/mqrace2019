@@ -10,17 +10,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class DirectBufferManager {
     private static BlockingQueue<ByteBuffer> bufferQueue = new LinkedBlockingQueue<>();
-    private static BlockingQueue<ByteBuffer> smallBufferQueue = new LinkedBlockingQueue<>();
 
     static {
 
-        long queueSize = Constants.Direct_Memory_Size / (Constants.Direct_Write_Buffer_Size + Constants.Direct_Write_Small_Buffer_Size);
+        long queueSize = Constants.Direct_Memory_Size / Constants.Direct_Write_Buffer_Size;
 
         for (long i = 0; i < queueSize; i++) {
             ByteBuffer buffer = ByteBuffer.allocateDirect((int) Constants.Direct_Write_Buffer_Size);
-            ByteBuffer smallBuffer = ByteBuffer.allocateDirect((int) Constants.Direct_Write_Small_Buffer_Size);
             bufferQueue.offer(buffer);
-            smallBufferQueue.offer(smallBuffer);
         }
     }
 
@@ -43,24 +40,6 @@ public class DirectBufferManager {
         }
     }
 
-    public static ByteBuffer borrowSmallBuffer() {
-        try {
-            ByteBuffer buffer = smallBufferQueue.take();
-            buffer.clear();
-            return buffer;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public static void returnSmallBuffer(ByteBuffer buffer) {
-        try {
-            smallBufferQueue.put(buffer);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public static void changeToRead() {
         List<ByteBuffer> tmp = new ArrayList<>();
@@ -68,11 +47,7 @@ public class DirectBufferManager {
         for (ByteBuffer buffer : tmp) {
             ((DirectBuffer) buffer).cleaner().clean();
         }
-        List<ByteBuffer> tmp1 = new ArrayList<>();
-        smallBufferQueue.drainTo(tmp1);
-        for (ByteBuffer buffer : tmp1) {
-            ((DirectBuffer) buffer).cleaner().clean();
-        }
+
         long queueSize = Constants.Direct_Memory_Size / Constants.Direct_Read_Buffer_Size;
 
         for (long i = 0; i < queueSize; i++) {

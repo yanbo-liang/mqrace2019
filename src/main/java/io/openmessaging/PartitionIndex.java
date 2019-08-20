@@ -8,6 +8,9 @@ public class PartitionIndex {
     private static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
     private static long tMin = 0, tMax = 999;
     private static long startPosition = 0, totalByteIndexed = 0;
+    private static ByteBuffer tBuffer = ByteBuffer.allocate(10000 * 8);
+    private static ByteBuffer tCompressed = ByteBuffer.allocate(1024 * 1024 * 1024);
+    private static int start = 0;
 
     public synchronized static void buildIndex(ByteBuffer buffer) {
         int i = 0;
@@ -18,11 +21,15 @@ public class PartitionIndex {
                 if (startPosition != totalByteIndexed) {
                     partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed));
                     startPosition = totalByteIndexed;
+                    int totalByteCompressed = CompressUtil.compress(tBuffer, tCompressed, start);
+                    start+=totalByteCompressed;
+                    System.out.println("compressed "+start);
+                    tBuffer.clear();
                 }
                 tMin = (t / 1000) * 1000;
                 tMax = tMin + 999;
             }
-
+            tBuffer.putLong(t);
             totalByteIndexed += Constants.Message_Size;
             i += Constants.Message_Size;
         }
