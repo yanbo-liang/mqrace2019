@@ -3,7 +3,6 @@ package io.openmessaging;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
 public class ZipTest {
     public static void main(String[] args) {
