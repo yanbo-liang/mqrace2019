@@ -110,6 +110,8 @@ public class MessageReader {
 
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         buffer.limit((int) (end - start));
+
+        System.out.println("limit "+buffer.limit());
         long r = System.currentTimeMillis();
 
         synchronized (buffer) {
