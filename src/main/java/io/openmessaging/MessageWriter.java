@@ -28,9 +28,6 @@ public class MessageWriter {
     private byte[] messageBuffer;
     private byte[] sortMessageBuffer;
 
-    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
-    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
-
     private long totalByteWritten = 0;
 
     public MessageWriter() {
