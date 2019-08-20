@@ -8,15 +8,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageReader {
-    private AsynchronousFileChannel fileChannel;
+    private AsynchronousFileChannel messageChannel;
+    private AsynchronousFileChannel headerChannel;
 
     public MessageReader() {
         try {
-            Path path = Paths.get(Constants.Path);
-            fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.READ);
+            messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
+            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -48,8 +50,8 @@ public class MessageReader {
 
     public ByteBuffer read(long tMin, long tMax) {
         long s = System.currentTimeMillis();
-//        long start = MessageIndex.readStartInclusive(tMin);
-////        long end = MessageIndex.readEndExclusive(tMax);
+//        long mStart = MessageIndex.readStartInclusive(tMin);
+////        long mEnd = MessageIndex.readEndExclusive(tMax);
 
         long start = PartitionIndex.a(tMin);
         long end = PartitionIndex.b(tMax);
@@ -65,7 +67,7 @@ public class MessageReader {
         long r = System.currentTimeMillis();
 
         synchronized (buffer) {
-            fileChannel.read(buffer, start, buffer, new Callback());
+            messageChannel.read(buffer, start, buffer, new Callback());
             try {
                 buffer.wait();
 
@@ -78,26 +80,50 @@ public class MessageReader {
         return buffer;
     }
 
-    public ByteBuffer readMissedPartition(List<PartitionIndex.PartitionInfo> partitionInfoList) {
-        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-        buffer.limit(0);
-        Callback callback = new Callback();
-        for (int i = 0; i < partitionInfoList.size(); i++) {
-            PartitionIndex.PartitionInfo partitionInfo = partitionInfoList.get(i);
-            buffer.limit((buffer.limit() + (int) (partitionInfo.end - partitionInfo.start)));
-            synchronized (buffer) {
+    public ByteBuffer fastread(long tMin, long tMax) {
 
-                fileChannel.read(buffer, partitionInfo.start, buffer, callback);
-                try {
-                    buffer.wait();
+        NavigableMap<Long, PartitionIndex.PartitionInfo> bc = PartitionIndex.bc(tMin, tMax);
+        PartitionIndex.PartitionInfo first = bc.firstEntry().getValue();
+        PartitionIndex.PartitionInfo last = bc.lastEntry().getValue();
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+
+        long[] decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), first.tStart);
+        int i = 0;
+        for (; i < decompress.length; i++) {
+            if (decompress[i] >= tMin) {
+                System.out.println(decompress[i] + " aa");
+                break;
             }
 
         }
+        decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), last.tStart);
+        int j = 0;
+        for (; j<decompress.length; j++) {
+            if (decompress[decompress.length-1-j] <= tMax) {
+                System.out.println(decompress[decompress.length-1-j] + " bb");
+                break;
+            }
+
+        }
+        long start = (first.mStart / Constants.Message_Size+i) * 8;
+        long end = (last.mEnd / Constants.Message_Size-j) * 8;
+
+        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+        buffer.limit((int) (end - start));
+        long r = System.currentTimeMillis();
+
+        synchronized (buffer) {
+            headerChannel.read(buffer, start, buffer, new Callback());
+            try {
+                buffer.wait();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("read:" + (System.currentTimeMillis() - r));
 
         return buffer;
     }
+
 }

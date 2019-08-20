@@ -133,23 +133,28 @@ public class DefaultMessageStoreImpl extends MessageStore {
         long total = 0;
         int count = 0;
 
-        ByteBuffer buffer = reader.read(tMin, tMax);
+        ;
+        ByteBuffer buffer = reader.fastread(tMin,tMax);
 
         buffer.flip();
 
 
         while (buffer.position() < buffer.limit()) {
 
-
-            long t = buffer.getLong();
             long a = buffer.getLong();
-            if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+            if (aMin <= a && a <= aMax) {
                 count++;
                 total += a;
             }
-            int dataSize = Constants.Message_Size - 16;
+//            long t = buffer.getLong();
+//            long a = buffer.getLong();
+//            if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+//                count++;
+//                total += a;
+//            }
+//            int dataSize = Constants.Message_Size - 16;
 
-            buffer.position(buffer.position() + dataSize);
+//            buffer.position(buffer.position() + dataSize);
 
         }
         DirectBufferManager.returnBuffer(buffer);

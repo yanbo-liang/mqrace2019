@@ -10,7 +10,6 @@ public class PartitionIndex {
     private static long startPosition = 0, totalByteIndexed = 0;
     private static int totalByteCompressed = 0;
     private static ByteBuffer tBuffer = ByteBuffer.allocate(100000 * 8);
-    private static ByteBuffer tCompressed = ByteBuffer.allocate(1024 * 1024 * 1024);
 
     public synchronized static void buildIndex(ByteBuffer buffer) {
         int i = 0;
@@ -18,14 +17,18 @@ public class PartitionIndex {
             long t = buffer.getLong(i);
 
             if (!(tMin <= t && t <= tMax)) {
+
                 if (startPosition != totalByteIndexed) {
-                    partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed));
-                    startPosition = totalByteIndexed;
 
                     tBuffer.flip();
-                    int byteCompressed = CompressUtil.compress(tBuffer, tCompressed, totalByteCompressed);
-                    totalByteCompressed += byteCompressed;
+                    int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalByteCompressed);
                     tBuffer.clear();
+
+                    partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed, totalByteCompressed, totalByteCompressed + byteCompressed));
+                    startPosition = totalByteIndexed;
+                    totalByteCompressed += byteCompressed;
+
+
                 }
                 tMin = (t / 1000) * 1000;
                 tMax = tMin + 999;
@@ -39,17 +42,23 @@ public class PartitionIndex {
 
     public synchronized static void completeIndex() {
         if (startPosition != totalByteIndexed) {
-            partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed));
+            tBuffer.flip();
+            int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalByteCompressed);
+            tBuffer.clear();
+
+            partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed, totalByteCompressed, totalByteCompressed + byteCompressed));
+            startPosition = totalByteIndexed;
+            totalByteCompressed += byteCompressed;
         }
     }
 
     public synchronized static long a(long tMin) {
         System.out.println("map Size " + partitionMap.size());
-        return partitionMap.ceilingEntry(tMin / 1000).getValue().start;
+        return partitionMap.ceilingEntry(tMin / 1000).getValue().mStart;
     }
 
     public synchronized static long b(long tMax) {
-        return partitionMap.floorEntry(tMax / 1000).getValue().end;
+        return partitionMap.floorEntry(tMax / 1000).getValue().mEnd;
 
     }
 
@@ -58,11 +67,15 @@ public class PartitionIndex {
     }
 
     public static class PartitionInfo {
-        long start, end;
+        long mStart, mEnd;
+        int tStart, tEnd;
 
-        PartitionInfo(long start, long end) {
-            this.start = start;
-            this.end = end;
+        PartitionInfo(long mStart, long mEnd, int tStart, int tEnd) {
+            this.mStart = mStart;
+            this.mEnd = mEnd;
+            this.tStart = tStart;
+            this.tEnd = tEnd;
+
         }
     }
 }

@@ -13,11 +13,12 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
-    private AsynchronousFileChannel fileChannel;
-
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private BlockingQueue<MessageWriterTask> taskQueue = new SynchronousQueue<>();
+
+    private AsynchronousFileChannel messageChannel;
+    private AsynchronousFileChannel headerChannel;
 
     private AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
 
@@ -28,18 +29,19 @@ public class MessageWriter {
     private byte[] messageBuffer;
     private byte[] sortMessageBuffer;
 
-    private long totalByteWritten = 0;
+    private long messageTotalByteWritten = 0;
+    private long headerTotalByteWritten = 0;
 
     private int times = 0;
 
     public MessageWriter() {
         try {
-            fileChannel = AsynchronousFileChannel.open(Paths.get(Constants.Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-
+            messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            executor.execute(new MessageWriterJob());
         } catch (IOException e) {
             e.printStackTrace();
         }
-        executor.execute(new MessageWriterJob());
     }
 
     public void write(MessageWriterTask messageWriterTask) {
@@ -133,35 +135,39 @@ public class MessageWriter {
         }
 
         private void writeBatch(int start, int length, boolean isEnd) {
+            long s = System.currentTimeMillis();
 
             ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             buffer.put(sortMessageBuffer, start, length);
             buffer.flip();
+            System.out.println("buffer fill " + (System.currentTimeMillis() - s));
 
-            long s = System.currentTimeMillis();
             PartitionIndex.buildIndex(buffer);
-            System.out.println("buildIndex " + (System.currentTimeMillis() - s));
-            asyncWrite(buffer, isEnd);
+
+            ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
+            for (int i = start; i < length; i += Constants.Message_Size) {
+                headerBuffer.putLong(buffer.getLong(i + 8));
+            }
+            headerBuffer.flip();
+            asyncWrite(buffer, headerBuffer, isEnd);
             DirectBufferManager.returnBuffer(buffer);
+            DirectBufferManager.returnHeaderBuffer(headerBuffer);
         }
 
-        private void asyncWrite(ByteBuffer buffer, boolean end) {
+        private void asyncWrite(ByteBuffer messageBuffer, ByteBuffer headerBuffer, boolean end) {
 
             pendingAsyncWrite.incrementAndGet();
-            fileChannel.write(buffer, totalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+            pendingAsyncWrite.incrementAndGet();
+            messageChannel.write(messageBuffer, messageTotalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+            headerChannel.write(headerBuffer, headerTotalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
 
-            totalByteWritten += buffer.limit();
-
+            messageTotalByteWritten += messageBuffer.limit();
+            headerTotalByteWritten += headerBuffer.limit();
             if (end) {
-                long start = System.currentTimeMillis();
-                while (pendingAsyncWrite.get() != 0) {
-                    if (System.currentTimeMillis() - start >= 20000) {
-                        System.exit(1);
-                    }
-                }
+                while (pendingAsyncWrite.get() != 0) ;
                 try {
-                    fileChannel.close();
-//                    headerChannel.close();
+                    messageChannel.close();
+                    headerChannel.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
