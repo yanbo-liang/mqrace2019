@@ -38,7 +38,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
-    private ConcurrentHashMap<Long, Thread> threadMap = new ConcurrentHashMap();
 
     @Override
     void put(Message message) {
@@ -155,7 +154,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             }
             missedPartitionInfo.add(partitionInfo);
         }
-
+        System.out.println(partitionMap.size()+" "+missedPartitionInfo.size());
 
         ByteBuffer buffer = reader.readMissedPartition(missedPartitionInfo);
 

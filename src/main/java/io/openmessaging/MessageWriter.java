@@ -28,8 +28,8 @@ public class MessageWriter {
     private byte[] messageBuffer;
     private byte[] sortMessageBuffer;
 
-//    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
-//    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 / 2);
+    private ByteBuffer unCompressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8);
+    private ByteBuffer compressedHeaderBuffer = ByteBuffer.allocate(messageBatchSize * 8 );
 
     private long totalByteWritten = 0;
 
@@ -70,10 +70,8 @@ public class MessageWriter {
 //        private ByteBuffer getCompressedHeaderBuffer(int start, int length) {
 //            unCompressedHeaderBuffer.clear();
 //            for (int i = start; i < length; i += messageSize) {
-//                int t = (int) ByteUtils.getLong(sortMessageBuffer, i);
 //                int a = (int) ByteUtils.getLong(sortMessageBuffer, i + 8);
 //                unCompressedHeaderBuffer.putInt(t);
-//                unCompressedHeaderBuffer.putInt(a-t);
 //            }
 //            byte[] uncompressed = unCompressedHeaderBuffer.array();
 //            byte[] compressed = compressedHeaderBuffer.array();
