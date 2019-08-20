@@ -91,8 +91,8 @@ public class MessageWriter {
             buffer.flip();
 
             long s = System.currentTimeMillis();
-            PartitionIndex.index(buffer);
-            System.out.println("index " + (System.currentTimeMillis() - s));
+            PartitionIndex.buildIndex(buffer);
+            System.out.println("buildIndex " + (System.currentTimeMillis() - s));
             asyncWrite(buffer, isEnd);
             DirectBufferManager.returnBuffer(buffer);
         }
@@ -125,7 +125,7 @@ public class MessageWriter {
                         writeBatch(messageBufferSize, task.getBufferLimit(), true);
 
                         DirectBufferManager.changeToRead();
-                        PartitionIndex.complete();
+                        PartitionIndex.completeIndex();
 
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();
