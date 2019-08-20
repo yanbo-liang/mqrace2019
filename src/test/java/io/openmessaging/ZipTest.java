@@ -1,38 +1,41 @@
 package io.openmessaging;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 public class ZipTest {
     public static void main(String[] args) {
-        int size = 100000;
-        byte[] data = new byte[size * 8];
-        byte[] output = new byte[size * 8];
+        int size = 5000000;
+        ByteBuffer input = ByteBuffer.allocate(size * 8);
+        ByteBuffer output = ByteBuffer.allocate(size * 8);
         for (int k = 0; k < size; k++) {
-            ByteUtils.putLong(data, k, (k * 8));
+            long l = ThreadLocalRandom.current().nextLong(165451974654981L, 365451974654981L);
+            input.putLong(l);
         }
         Deflater deflater = new Deflater(1);
-        deflater.setInput(data);
+        deflater.setInput(input.array());
         deflater.finish();
 
         long start = System.currentTimeMillis();
-        int compressedSize = deflater.deflate(output);
+        int compressedSize = deflater.deflate(output.array());
         System.out.println(System.currentTimeMillis() - start);
-        System.out.println(data.length + "->" + compressedSize);
+        System.out.println(input.capacity() + "->" + compressedSize);
         // Decompress the bytes
-        Inflater decompresser = new Inflater();
-         start = System.currentTimeMillis();
-
-        decompresser.setInput(output, 0, compressedSize);
-
-        try {
-            int resultLength = decompresser.inflate(data);
-            System.out.println(System.currentTimeMillis() - start);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        decompresser.end();
+//        Inflater decompresser = new Inflater();
+//        start = System.currentTimeMillis();
+//
+//        decompresser.setInput(output, 0, compressedSize);
+//
+//        try {
+//            int resultLength = decompresser.inflate(data);
+//            System.out.println(System.currentTimeMillis() - start);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        decompresser.end();
     }
 //        try {
 //            byte[] a = new byte[600000*8];
