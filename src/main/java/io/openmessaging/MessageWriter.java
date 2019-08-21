@@ -161,6 +161,8 @@ public class MessageWriter {
 
             messageTotalByteWritten += messageBuffer.limit();
             headerTotalByteWritten += headerBuffer.limit();
+
+
             if (end) {
                 while (pendingAsyncWrite.get() != 0) ;
                 try {
@@ -170,6 +172,8 @@ public class MessageWriter {
                     e.printStackTrace();
                 }
             }
+            System.out.println("messageTotalByteWritten " + messageTotalByteWritten);
+            System.out.println("headerTotalByteWritten " + headerTotalByteWritten);
         }
 
         private class WriteCompletionHandler implements CompletionHandler<Integer, AtomicInteger> {

@@ -37,9 +37,9 @@ public class PartitionIndex {
             totalByteIndexed += Constants.Message_Size;
             i += Constants.Message_Size;
         }
-        System.out.println(startPosition);
-
-        System.out.println(totalByteCompressed);
+//        System.out.println(startPosition);
+//
+//        System.out.println(totalByteCompressed);
     }
 
     public synchronized static void completeIndex() {
