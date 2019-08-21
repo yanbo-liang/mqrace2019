@@ -30,7 +30,11 @@ public class CompressUtil {
             }
         }
         compressed.putInt(start, pointer);
-        return pointer / 8 + 1;
+        if (pointer % 8 == 0) {
+            return pointer / 8;
+        } else {
+            return pointer / 8 + 1;
+        }
     }
 
     public static long[] decompress(ByteBuffer compressed, int start) {

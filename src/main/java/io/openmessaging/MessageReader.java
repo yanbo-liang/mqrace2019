@@ -36,6 +36,7 @@ public class MessageReader {
         public void completed(Integer result, ByteBuffer attachment) {
 
             synchronized (attachment) {
+                System.out.println("byte read: " + result);
                 attachment.notify();
 
             }
@@ -98,20 +99,20 @@ public class MessageReader {
         }
         decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), last.tStart);
         int j = 0;
-        for (; j<decompress.length; j++) {
-            if (decompress[decompress.length-1-j] <= tMax) {
-                System.out.println(decompress[decompress.length-1-j] + " bb");
+        for (; j < decompress.length; j++) {
+            if (decompress[decompress.length - 1 - j] <= tMax) {
+                System.out.println(decompress[decompress.length - 1 - j] + " bb");
                 break;
             }
 
         }
-        long start = (first.mStart / Constants.Message_Size+i) * 8;
-        long end = (last.mEnd / Constants.Message_Size-j) * 8;
+        long start = (first.mStart / Constants.Message_Size + i) * 8;
+        long end = (last.mEnd / Constants.Message_Size - j) * 8;
 
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         buffer.limit((int) (end - start));
 
-        System.out.println("limit "+buffer.limit());
+        System.out.println("limit " + buffer.limit() + " start " + start);
         long r = System.currentTimeMillis();
 
         synchronized (buffer) {
