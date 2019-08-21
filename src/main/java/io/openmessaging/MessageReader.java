@@ -81,7 +81,7 @@ public class MessageReader {
         return buffer;
     }
 
-    public ByteBuffer fastread(long tMin, long tMax) {
+    public void fastread(ByteBuffer buffer, long tMin, long tMax) {
 
         NavigableMap<Long, PartitionIndex.PartitionInfo> bc = PartitionIndex.bc(tMin, tMax);
         PartitionIndex.PartitionInfo first = bc.firstEntry().getValue();
@@ -109,7 +109,6 @@ public class MessageReader {
         long start = (first.mStart / Constants.Message_Size + i) * 8;
         long end = (last.mEnd / Constants.Message_Size - j) * 8;
 
-        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         buffer.limit((int) (end - start));
 
         System.out.println("limit " + buffer.limit() + " start " + start);
@@ -125,8 +124,6 @@ public class MessageReader {
             }
         }
         System.out.println("read:" + (System.currentTimeMillis() - r));
-
-        return buffer;
     }
 
 }

@@ -15,7 +15,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private int batchSize = Constants.Message_Batch_Size;
     private int messageSize = Constants.Message_Size;
 
-        private volatile ByteBuffer buffer = ByteBuffer.allocate(batchSize * messageSize);
+    private volatile ByteBuffer messageBuffer = ByteBuffer.allocate(batchSize * messageSize);
 
 
     private AtomicInteger concurrentPut = new AtomicInteger(0);
@@ -26,10 +26,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     private void messageToBuffer(int count, Message message) {
         int startIndex = count * Constants.Message_Size;
-        buffer.putLong(startIndex, message.getT());
-        buffer.putLong(startIndex + 8, message.getA());
+        messageBuffer.putLong(startIndex, message.getT());
+        messageBuffer.putLong(startIndex + 8, message.getA());
         for (int i = 0; i < messageSize - 16; i++) {
-            buffer.put(startIndex + 16 + i, message.getBody()[i]);
+            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
         }
     }
 
@@ -49,8 +49,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 while (concurrentPut.get() != 0) {
                 }
 
-                writer.write(new MessageWriterTask(buffer));
-                buffer = ByteBuffer.allocate(batchSize * messageSize);
+                writer.write(new MessageWriterTask(messageBuffer));
+                messageBuffer = ByteBuffer.allocate(batchSize * messageSize);
                 messageCount.getAndUpdate(x -> 0);
                 synchronized (this) {
                     this.notifyAll();
@@ -79,7 +79,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
         if (!init.get()) {
             if (init.compareAndSet(false, true)) {
-                writer.flushAndShutDown(buffer, messageCount.get() * Constants.Message_Size);
+                writer.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
                 readyForRead = true;
                 synchronized (this) {
                     this.notifyAll();
@@ -130,40 +130,21 @@ public class DefaultMessageStoreImpl extends MessageStore {
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
         long start = System.currentTimeMillis();
-        long total = 0;
-        int count = 0;
-
-        ;
-        ByteBuffer buffer = reader.fastread(tMin,tMax);
-
+        long sum = 0, count = 0;
+        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+        reader.fastread(buffer, tMin, tMax);
         buffer.flip();
-
-
-        while (buffer.position() < buffer.limit()) {
-
+        while (buffer.hasRemaining()) {
             long a = buffer.getLong();
             if (aMin <= a && a <= aMax) {
-                count++;
-                total += a;
+                sum += a;
+                count += 1;
             }
-//            long t = buffer.getLong();
-//            long a = buffer.getLong();
-//            if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-//                count++;
-//                total += a;
-//            }
-//            int dataSize = Constants.Message_Size - 16;
-
-//            buffer.position(buffer.position() + dataSize);
-
         }
         DirectBufferManager.returnBuffer(buffer);
-        System.out.println("average:" + (System.currentTimeMillis() - start));
-
-        return count == 0 ? 0 : total / count;
-
+        System.out.println("average: " + (System.currentTimeMillis() - start));
+        return count == 0 ? 0 : sum / count;
     }
-
 }
 //    private void messageToBuffer(int count, Message message) {
 //        messages[count] = message;
