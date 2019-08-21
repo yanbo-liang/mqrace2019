@@ -143,7 +143,7 @@ public class MessageWriter {
             PartitionIndex.buildIndex(buffer);
 
             ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
-            for (int i = start; i < start+length; i += Constants.Message_Size) {
+            for (int i = 0; i < length; i += Constants.Message_Size) {
                 headerBuffer.putLong(buffer.getLong(i + 8));
             }
             headerBuffer.flip();
