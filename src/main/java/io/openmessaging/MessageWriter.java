@@ -96,7 +96,7 @@ public class MessageWriter {
                         writeBatch(messageBufferSize, task.getBufferLimit(), true);
 
                         DirectBufferManager.changeToRead();
-                        PartitionIndex.completeIndex();
+                        PartitionIndex.flushIndex();
 
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();

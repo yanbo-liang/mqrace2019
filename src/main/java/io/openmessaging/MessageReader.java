@@ -80,7 +80,7 @@ public class MessageReader {
         PartitionIndex.PartitionInfo firstPartition = PartitionIndex.firstPartitionInfo(tMin);
         PartitionIndex.PartitionInfo lastPartition = PartitionIndex.lastPartitionInfo(tMax);
 
-        long[] uncompressedT = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), firstPartition.compressedStart);
+        long[] uncompressedT = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), firstPartition.cStart);
         int i = 0;
         for (; i < uncompressedT.length; i++) {
             if (uncompressedT[i] >= tMin) {
@@ -89,7 +89,7 @@ public class MessageReader {
             }
 
         }
-        uncompressedT = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), lastPartition.compressedStart);
+        uncompressedT = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), lastPartition.cStart);
         int j = 0;
         for (; j < uncompressedT.length; j++) {
             if (uncompressedT[uncompressedT.length - 1 - j] <= tMax) {
