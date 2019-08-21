@@ -37,6 +37,8 @@ public class PartitionIndex {
             totalByteIndexed += Constants.Message_Size;
             i += Constants.Message_Size;
         }
+        System.out.println(startPosition);
+
         System.out.println(totalByteCompressed);
     }
 
@@ -50,6 +52,8 @@ public class PartitionIndex {
             startPosition = totalByteIndexed;
             totalByteCompressed += byteCompressed;
         }
+        System.out.println(startPosition);
+
     }
 
     public synchronized static PartitionInfo firstPartitionInfo(long tMin) {
