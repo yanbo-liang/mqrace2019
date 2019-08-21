@@ -8,8 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class MessageReader {
-    private static AsynchronousFileChannel messageChannel;
-    private static AsynchronousFileChannel aChannel;
+    private static AsynchronousFileChannel messageChannel, aChannel;
 
     static {
         try {

@@ -7,8 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultMessageStoreImpl extends MessageStore {
-    private MessageWriter writer = new MessageWriter();
-
     private AtomicInteger messageCount = new AtomicInteger(0);
 
     private int batchSize = Constants.Message_Batch_Size;
@@ -48,7 +46,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 while (concurrentPut.get() != 0) {
                 }
 
-                writer.write(new MessageWriterTask(messageBuffer));
+                MessageWriter.write(new MessageWriterTask(messageBuffer));
                 messageBuffer = ByteBuffer.allocate(batchSize * messageSize);
                 messageCount.getAndUpdate(x -> 0);
                 synchronized (this) {
@@ -78,7 +76,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
-                    writer.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
+                    MessageWriter.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
                     readyForRead = true;
                     synchronized (this) {
                         this.notifyAll();

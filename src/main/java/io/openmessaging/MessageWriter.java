@@ -13,28 +13,24 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
-    private ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static AsynchronousFileChannel messageChannel, headerChannel;
+    private static ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    private BlockingQueue<MessageWriterTask> taskQueue = new SynchronousQueue<>();
+    private static BlockingQueue<MessageWriterTask> taskQueue = new SynchronousQueue<>();
 
-    private AsynchronousFileChannel messageChannel;
-    private AsynchronousFileChannel headerChannel;
+    private static AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
 
-    private AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
+    private static int messageBatchSize = Constants.Message_Batch_Size;
+    private static int messageSize = Constants.Message_Size;
+    private static int messageBufferSize = messageBatchSize * messageSize;
 
-    private int messageBatchSize = Constants.Message_Batch_Size;
-    private int messageSize = Constants.Message_Size;
-    private int messageBufferSize = messageBatchSize * messageSize;
+    private static byte[] messageBuffer;
+    private static byte[] sortMessageBuffer;
 
-    private byte[] messageBuffer;
-    private byte[] sortMessageBuffer;
+    private static long messageTotalByteWritten = 0;
+    private static long headerTotalByteWritten = 0;
 
-    private long messageTotalByteWritten = 0;
-    private long headerTotalByteWritten = 0;
-
-    private int times = 0;
-
-    public MessageWriter() {
+    static {
         try {
             messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -44,7 +40,7 @@ public class MessageWriter {
         }
     }
 
-    public void write(MessageWriterTask messageWriterTask) {
+    public static void write(MessageWriterTask messageWriterTask) {
         try {
             taskQueue.put(messageWriterTask);
         } catch (Exception e) {
@@ -52,10 +48,9 @@ public class MessageWriter {
         }
     }
 
-    public void flushAndShutDown(ByteBuffer messageBuffer, int bufferLimit) {
+    public static void flushAndShutDown(ByteBuffer messageBuffer, int bufferLimit) {
         try {
             write(MessageWriterTask.createEndTask(messageBuffer, bufferLimit));
-            System.out.println("send end");
             synchronized (MessageWriter.class) {
                 MessageWriter.class.wait();
             }
@@ -66,8 +61,7 @@ public class MessageWriter {
 
     }
 
-    private class MessageWriterJob implements Runnable {
-
+    private static class MessageWriterJob implements Runnable {
         @Override
         public void run() {
             try {
@@ -89,7 +83,6 @@ public class MessageWriter {
                         messageBuffer = endMessageBuffer;
                         sortMessageBuffer = new byte[messageBufferSize + task.getBufferLimit()];
                         ByteUtils.countSort(ByteBuffer.wrap(messageBuffer), sortMessageBuffer);
-
 
                         writeBatch(0, messageBufferSize, false);
 
@@ -153,7 +146,6 @@ public class MessageWriter {
         }
 
         private void asyncWrite(ByteBuffer messageBuffer, ByteBuffer headerBuffer, boolean end) {
-
             pendingAsyncWrite.incrementAndGet();
             pendingAsyncWrite.incrementAndGet();
             messageChannel.write(messageBuffer, messageTotalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
@@ -161,7 +153,6 @@ public class MessageWriter {
 
             messageTotalByteWritten += messageBuffer.limit();
             headerTotalByteWritten += headerBuffer.limit();
-
 
             if (end) {
                 while (pendingAsyncWrite.get() != 0) ;
@@ -184,9 +175,7 @@ public class MessageWriter {
 
             @Override
             public void failed(Throwable exc, AtomicInteger pendingAsyncWrite) {
-                System.out.println("write failed");
                 exc.printStackTrace();
-                System.exit(1);
             }
         }
     }
