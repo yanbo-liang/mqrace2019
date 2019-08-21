@@ -112,7 +112,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
             DirectBufferManager.returnBuffer(buffer);
-            System.out.println("g:\t" + (System.currentTimeMillis() - start));
+            System.out.println("gt:\t" + (System.currentTimeMillis() - start));
             return messageList;
         } catch (Exception e) {
             e.printStackTrace();
