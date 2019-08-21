@@ -8,10 +8,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class MessageReader {
-    private AsynchronousFileChannel messageChannel;
-    private AsynchronousFileChannel aChannel;
+    private static AsynchronousFileChannel messageChannel;
+    private static AsynchronousFileChannel aChannel;
 
-    public MessageReader() {
+    static {
         try {
             messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
             aChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
@@ -20,19 +20,19 @@ public class MessageReader {
         }
     }
 
-    public void read(ByteBuffer buffer, long tMin, long tMax) throws InterruptedException {
+    public static void read(ByteBuffer buffer, long tMin, long tMax) throws InterruptedException {
         long messageStart = PartitionIndex.getMessageStart(tMin);
         long messageEnd = PartitionIndex.getMessageEnd(tMax);
         asyncRead(buffer, messageChannel, messageStart, messageEnd - messageStart);
     }
 
-    public void fastRead(ByteBuffer buffer, long tMin, long tMax) throws InterruptedException {
+    public static void fastRead(ByteBuffer buffer, long tMin, long tMax) throws InterruptedException {
         long aStart = PartitionIndex.getAStart(tMin);
         long aEnd = PartitionIndex.getAEnd(tMax);
         asyncRead(buffer, aChannel, aStart, aEnd - aStart);
     }
 
-    private void asyncRead(ByteBuffer buffer, AsynchronousFileChannel channel, long start, long length) throws InterruptedException {
+    private static void asyncRead(ByteBuffer buffer, AsynchronousFileChannel channel, long start, long length) throws InterruptedException {
         long readStart = System.currentTimeMillis();
         synchronized (buffer) {
             buffer.limit((int) length);
@@ -42,7 +42,7 @@ public class MessageReader {
         System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
     }
 
-    private class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
+    private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
         @Override
         public void completed(Integer result, ByteBuffer buffer) {
             synchronized (buffer) {

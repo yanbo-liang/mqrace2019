@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultMessageStoreImpl extends MessageStore {
     private MessageWriter writer = new MessageWriter();
-    private MessageReader reader = new MessageReader();
 
     private AtomicInteger messageCount = new AtomicInteger(0);
 
@@ -97,7 +96,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             }
             long start = System.currentTimeMillis();
             ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-            reader.read(buffer, tMin, tMax);
+            MessageReader.read(buffer, tMin, tMax);
             buffer.flip();
             List<Message> messageList = new ArrayList<>();
             while (buffer.hasRemaining()) {
@@ -129,7 +128,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long sum = 0, count = 0;
 
             ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-            reader.fastRead(buffer, tMin, tMax);
+            MessageReader.fastRead(buffer, tMin, tMax);
             buffer.flip();
             while (buffer.hasRemaining()) {
                 long a = buffer.getLong();
