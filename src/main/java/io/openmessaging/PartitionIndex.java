@@ -24,7 +24,7 @@ public class PartitionIndex {
                     int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalByteCompressed);
                     tBuffer.clear();
 
-                    partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed, totalByteCompressed, totalByteCompressed + byteCompressed));
+                    partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed, totalByteCompressed));
                     startPosition = totalByteIndexed;
                     totalByteCompressed += byteCompressed;
 
@@ -46,20 +46,10 @@ public class PartitionIndex {
             int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalByteCompressed);
             tBuffer.clear();
 
-            partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed, totalByteCompressed, totalByteCompressed + byteCompressed));
+            partitionMap.put(tMin / 1000, new PartitionInfo(startPosition, totalByteIndexed, totalByteCompressed));
             startPosition = totalByteIndexed;
             totalByteCompressed += byteCompressed;
         }
-    }
-
-    public synchronized static long a(long tMin) {
-        System.out.println("map Size " + partitionMap.size());
-        return partitionMap.ceilingEntry(tMin / 1000).getValue().mStart;
-    }
-
-    public synchronized static long b(long tMax) {
-        return partitionMap.floorEntry(tMax / 1000).getValue().mEnd;
-
     }
 
     public synchronized static PartitionInfo firstPartitionInfo(long tMin) {
@@ -77,14 +67,12 @@ public class PartitionIndex {
 
     public static class PartitionInfo {
         long mStart, mEnd;
-        int tStart, tEnd;
+        int compressedStart;
 
-        PartitionInfo(long mStart, long mEnd, int tStart, int tEnd) {
+        PartitionInfo(long mStart, long mEnd, int compressedStart) {
             this.mStart = mStart;
             this.mEnd = mEnd;
-            this.tStart = tStart;
-            this.tEnd = tEnd;
-
+            this.compressedStart = compressedStart;
         }
     }
 }

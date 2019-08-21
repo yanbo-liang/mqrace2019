@@ -4,11 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.NavigableMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageReader {
@@ -52,7 +49,7 @@ public class MessageReader {
     public ByteBuffer read(long tMin, long tMax) {
         long s = System.currentTimeMillis();
 
-        long start =PartitionIndex.firstPartitionInfo(tMin).mStart;
+        long start = PartitionIndex.firstPartitionInfo(tMin).mStart;
         long end = PartitionIndex.lastPartitionInfo(tMax).mEnd;
         System.out.println(start + " " + end);
 
@@ -83,20 +80,20 @@ public class MessageReader {
         PartitionIndex.PartitionInfo firstPartition = PartitionIndex.firstPartitionInfo(tMin);
         PartitionIndex.PartitionInfo lastPartition = PartitionIndex.lastPartitionInfo(tMax);
 
-        long[] decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), firstPartition.tStart);
+        long[] uncompressedT = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), firstPartition.compressedStart);
         int i = 0;
-        for (; i < decompress.length; i++) {
-            if (decompress[i] >= tMin) {
-                System.out.println(decompress[i] + " aa");
+        for (; i < uncompressedT.length; i++) {
+            if (uncompressedT[i] >= tMin) {
+                System.out.println(uncompressedT[i] + " aa");
                 break;
             }
 
         }
-        decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), lastPartition.tStart);
+        uncompressedT = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), lastPartition.compressedStart);
         int j = 0;
-        for (; j < decompress.length; j++) {
-            if (decompress[decompress.length - 1 - j] <= tMax) {
-                System.out.println(decompress[decompress.length - 1 - j] + " bb");
+        for (; j < uncompressedT.length; j++) {
+            if (uncompressedT[uncompressedT.length - 1 - j] <= tMax) {
+                System.out.println(uncompressedT[uncompressedT.length - 1 - j] + " bb");
                 break;
             }
 
@@ -105,6 +102,7 @@ public class MessageReader {
         long start = (firstPartition.mStart / Constants.Message_Size + i) * 8;
         long end = (lastPartition.mEnd / Constants.Message_Size - j) * 8;
 
+        System.out.println("mStart " + firstPartition.mStart + " mEnd " + lastPartition.mEnd);
         buffer.limit((int) (end - start));
         System.out.println("i " + i + " j " + j);
 
