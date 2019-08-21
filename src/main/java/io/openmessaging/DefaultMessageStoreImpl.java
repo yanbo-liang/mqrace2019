@@ -75,77 +75,80 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
-
-        if (!init.get()) {
-            if (init.compareAndSet(false, true)) {
-                writer.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
-                readyForRead = true;
+        try {
+            System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
+            if (!init.get()) {
+                if (init.compareAndSet(false, true)) {
+                    writer.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
+                    readyForRead = true;
+                    synchronized (this) {
+                        this.notifyAll();
+                    }
+                }
+            }
+            if (!readyForRead) {
                 synchronized (this) {
-                    this.notifyAll();
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        }
-        if (!readyForRead) {
-            synchronized (this) {
-                try {
-                    this.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            long start = System.currentTimeMillis();
+            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+            reader.read(buffer, tMin, tMax);
+            buffer.flip();
+            List<Message> messageList = new ArrayList<>();
+            while (buffer.hasRemaining()) {
+                int dataSize = Constants.Message_Size - 16;
+                long t = buffer.getLong();
+                long a = buffer.getLong();
+                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+                    byte[] b = new byte[dataSize];
+                    buffer.get(b, 0, dataSize);
+                    messageList.add(new Message(a, t, b));
+                } else {
+                    buffer.position(buffer.position() + dataSize);
                 }
             }
-        }
-        long start = System.currentTimeMillis();
-
-        ByteBuffer buffer = reader.read(tMin, tMax);
-        List<Message> messageList = new ArrayList<>();
-        if (buffer == null) {
-            System.out.println("buffer is null");
+            DirectBufferManager.returnBuffer(buffer);
+            System.out.println("average:" + (System.currentTimeMillis() - start));
             return messageList;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        buffer.flip();
-
-
-        while (buffer.position() < buffer.limit()) {
-
-            int dataSize = Constants.Message_Size - 16;
-            long t = buffer.getLong();
-            long a = buffer.getLong();
-            if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-
-                byte[] b = new byte[dataSize];
-                buffer.get(b, 0, dataSize);
-                messageList.add(new Message(a, t, b));
-            } else {
-                buffer.position(buffer.position() + dataSize);
-            }
-        }
-        DirectBufferManager.returnBuffer(buffer);
-        System.out.println("average:" + (System.currentTimeMillis() - start));
-
-        return messageList;
+        return new ArrayList<>();
     }
 
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
-        System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
-        long start = System.currentTimeMillis();
-        long sum = 0, count = 0;
-        ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-        reader.fastRead(buffer, tMin, tMax);
-        buffer.flip();
-        while (buffer.hasRemaining()) {
-            long a = buffer.getLong();
-            if (aMin <= a && a <= aMax) {
-                sum += a;
-                count += 1;
+        try {
+            System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
+            long start = System.currentTimeMillis();
+            long sum = 0, count = 0;
+
+            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+            reader.fastRead(buffer, tMin, tMax);
+            buffer.flip();
+            while (buffer.hasRemaining()) {
+                long a = buffer.getLong();
+                if (aMin <= a && a <= aMax) {
+                    sum += a;
+                    count += 1;
+                }
             }
+            DirectBufferManager.returnBuffer(buffer);
+            System.out.println("average:" + (System.currentTimeMillis() - start));
+            return count == 0 ? 0 : sum / count;
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        DirectBufferManager.returnBuffer(buffer);
-        System.out.println("average:" + (System.currentTimeMillis() - start));
-        return count == 0 ? 0 : sum / count;
+        return 0;
     }
 }
+
 //    private void messageToBuffer(int count, Message message) {
 //        messages[count] = message;
 //    }
