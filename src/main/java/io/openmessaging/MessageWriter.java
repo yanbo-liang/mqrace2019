@@ -37,7 +37,7 @@ public class MessageWriter {
     public MessageWriter() {
         try {
             messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.Header_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             executor.execute(new MessageWriterJob());
         } catch (IOException e) {
             e.printStackTrace();

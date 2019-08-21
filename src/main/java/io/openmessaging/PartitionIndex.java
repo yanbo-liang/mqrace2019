@@ -38,12 +38,36 @@ public class PartitionIndex {
         }
     }
 
-    public static PartitionInfo firstPartitionInfo(long tMin) {
-        return partitionMap.ceilingEntry(tMin / partitionSize).getValue();
+    public static long getMessageStart(long tMin) {
+        return partitionMap.ceilingEntry(tMin / partitionSize).getValue().mStart;
     }
 
-    public static PartitionInfo lastPartitionInfo(long tMax) {
-        return partitionMap.floorEntry(tMax / partitionSize).getValue();
+    public static long getMessageEnd(long tMax) {
+        return partitionMap.floorEntry(tMax / partitionSize).getValue().mEnd;
+    }
+
+    public static long getAStart(long tMin) {
+        PartitionInfo partitionInfo = partitionMap.ceilingEntry(tMin / partitionSize).getValue();
+        long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), partitionInfo.cStart);
+        int i = 0;
+        for (; i < uncompressed.length; i++) {
+            if (uncompressed[i] >= tMin) {
+                break;
+            }
+        }
+        return (partitionInfo.mStart / Constants.Message_Size + i) * 8;
+    }
+
+    public static long getAEnd(long tMax) {
+        PartitionInfo partitionInfo = partitionMap.floorEntry(tMax / partitionSize).getValue();
+        long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), partitionInfo.cStart);
+        int i = 0;
+        for (; i < uncompressed.length; i++) {
+            if (uncompressed[uncompressed.length - 1 - i] <= tMax) {
+                break;
+            }
+        }
+        return (partitionInfo.mEnd / Constants.Message_Size - i) * 8;
     }
 
     public static class PartitionInfo {
