@@ -51,11 +51,9 @@ public class MessageReader {
 
     public ByteBuffer read(long tMin, long tMax) {
         long s = System.currentTimeMillis();
-//        long mStart = MessageIndex.readStartInclusive(tMin);
-////        long mEnd = MessageIndex.readEndExclusive(tMax);
 
-        long start = PartitionIndex.a(tMin);
-        long end = PartitionIndex.b(tMax);
+        long start =PartitionIndex.firstPartitionInfo(tMin).mStart;
+        long end = PartitionIndex.lastPartitionInfo(tMax).mEnd;
         System.out.println(start + " " + end);
 
         if (start >= end) {
@@ -81,14 +79,11 @@ public class MessageReader {
         return buffer;
     }
 
-    public void fastread(ByteBuffer buffer, long tMin, long tMax) {
+    public void fastRead(ByteBuffer buffer, long tMin, long tMax) {
+        PartitionIndex.PartitionInfo firstPartition = PartitionIndex.firstPartitionInfo(tMin);
+        PartitionIndex.PartitionInfo lastPartition = PartitionIndex.lastPartitionInfo(tMax);
 
-        NavigableMap<Long, PartitionIndex.PartitionInfo> bc = PartitionIndex.bc(tMin, tMax);
-        PartitionIndex.PartitionInfo first = bc.firstEntry().getValue();
-        PartitionIndex.PartitionInfo last = bc.lastEntry().getValue();
-
-
-        long[] decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), first.tStart);
+        long[] decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), firstPartition.tStart);
         int i = 0;
         for (; i < decompress.length; i++) {
             if (decompress[i] >= tMin) {
@@ -97,7 +92,7 @@ public class MessageReader {
             }
 
         }
-        decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), last.tStart);
+        decompress = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), lastPartition.tStart);
         int j = 0;
         for (; j < decompress.length; j++) {
             if (decompress[decompress.length - 1 - j] <= tMax) {
@@ -106,10 +101,12 @@ public class MessageReader {
             }
 
         }
-        long start = (first.mStart / Constants.Message_Size + i) * 8;
-        long end = (last.mEnd / Constants.Message_Size - j) * 8;
+
+        long start = (firstPartition.mStart / Constants.Message_Size + i) * 8;
+        long end = (lastPartition.mEnd / Constants.Message_Size - j) * 8;
 
         buffer.limit((int) (end - start));
+        System.out.println("i " + i + " j " + j);
 
         System.out.println("limit " + buffer.limit() + " start " + start);
         long r = System.currentTimeMillis();

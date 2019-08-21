@@ -62,6 +62,15 @@ public class PartitionIndex {
 
     }
 
+    public synchronized static PartitionInfo firstPartitionInfo(long tMin) {
+        return partitionMap.ceilingEntry(tMin / 1000).getValue();
+    }
+
+    public synchronized static PartitionInfo lastPartitionInfo(long tMax) {
+        return partitionMap.floorEntry(tMax / 1000).getValue();
+
+    }
+
     public synchronized static NavigableMap<Long, PartitionInfo> bc(long tMin, long tMax) {
         return partitionMap.subMap(tMin / 1000, true, tMax / 1000, true);
     }

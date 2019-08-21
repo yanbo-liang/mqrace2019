@@ -132,7 +132,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         long start = System.currentTimeMillis();
         long sum = 0, count = 0;
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-        reader.fastread(buffer, tMin, tMax);
+        reader.fastRead(buffer, tMin, tMax);
         buffer.flip();
         while (buffer.hasRemaining()) {
             long a = buffer.getLong();
@@ -142,7 +142,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             }
         }
         DirectBufferManager.returnBuffer(buffer);
-        System.out.println("average: " + (System.currentTimeMillis() - start));
+        System.out.println("average:" + (System.currentTimeMillis() - start));
         return count == 0 ? 0 : sum / count;
     }
 }
