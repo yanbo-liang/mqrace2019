@@ -49,7 +49,9 @@ public class MessageWriter {
 
             if (end) {
                 LongArrayUtils.countSort(messageBuffer, sortedMessageBuffer, messageBufferCount);
-                writeBatch(messageBufferCount, messageBufferCount, true);
+                writeBatch(messageBufferCount,  Constants.Message_Batch_Size, false);
+                writeBatch(messageBufferCount- Constants.Message_Batch_Size,  messageBufferCount- Constants.Message_Batch_Size, true);
+
                 DirectBufferManager.changeToRead();
                 PartitionIndex.flushIndex();
                 synchronized (MessageWriter.class) {
@@ -74,7 +76,7 @@ public class MessageWriter {
             messageBuffer = sortedMessageBuffer;
             sortedMessageBuffer = tmp;
             messageBufferCount -= Constants.Message_Batch_Size;
-            Arrays.fill(messageBuffer, Constants.Message_Buffer_Size, Constants.Message_Buffer_Size*2, 0);
+            Arrays.fill(messageBuffer, Constants.Message_Buffer_Size, Constants.Message_Buffer_Size * 2, 0);
             System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
         } catch (Exception e) {
             e.printStackTrace();
@@ -84,6 +86,7 @@ public class MessageWriter {
 
 
     private static void writeBatch(int count, int length, boolean isEnd) {
+        long start = System.currentTimeMillis();
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
 
@@ -93,14 +96,13 @@ public class MessageWriter {
             buffer.putLong(sortedMessageBuffer[longIndex]);
             buffer.putLong(sortedMessageBuffer[longIndex + 1]);
             headerBuffer.putLong(sortedMessageBuffer[longIndex + 1]);
-//            if (sortedMessageBuffer[longIndex + 1] != sortedMessageBuffer[longIndex + 2]) {
-//                System.out.println();
-//            }
+
             LongArrayUtils.longArraytoByteBuffer(sortedMessageBuffer, longIndex + 2, buffer);
         }
         buffer.flip();
         headerBuffer.flip();
 
+        System.out.println("fill time " + (System.currentTimeMillis() - start));
         PartitionIndex.buildIndex(sortedMessageBuffer, count, length);
 
         asyncWrite(buffer, headerBuffer, isEnd);
