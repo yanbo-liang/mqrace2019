@@ -93,9 +93,9 @@ public class MessageWriter {
             buffer.putLong(sortedMessageBuffer[longIndex]);
             buffer.putLong(sortedMessageBuffer[longIndex + 1]);
             headerBuffer.putLong(sortedMessageBuffer[longIndex + 1]);
-            if (sortedMessageBuffer[longIndex + 1] != sortedMessageBuffer[longIndex + 2]) {
-                System.out.println();
-            }
+//            if (sortedMessageBuffer[longIndex + 1] != sortedMessageBuffer[longIndex + 2]) {
+//                System.out.println();
+//            }
             LongArrayUtils.longArraytoByteBuffer(sortedMessageBuffer, longIndex + 2, buffer);
         }
         buffer.flip();
