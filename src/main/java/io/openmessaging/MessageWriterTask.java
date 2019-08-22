@@ -1,27 +1,28 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 
 public class MessageWriterTask {
-    private ByteBuffer messageBuffer;
+    private LongBuffer messageBuffer;
     private int bufferLimit;
     private boolean end;
 
-    public static MessageWriterTask createEndTask(ByteBuffer messageBuffer, int limit) {
+    public static MessageWriterTask createEndTask(LongBuffer messageBuffer, int limit) {
         return new MessageWriterTask(messageBuffer, limit, true);
     }
 
-    public MessageWriterTask(ByteBuffer messageBuffer) {
+    public MessageWriterTask(LongBuffer messageBuffer) {
         this.messageBuffer = messageBuffer;
     }
 
-    private MessageWriterTask(ByteBuffer messageBuffer, int bufferLimit, boolean end) {
+    private MessageWriterTask(LongBuffer messageBuffer, int bufferLimit, boolean end) {
         this.messageBuffer = messageBuffer;
         this.bufferLimit = bufferLimit;
         this.end = end;
     }
 
-    public ByteBuffer getMessageBuffer() {
+    public LongBuffer getMessageBuffer() {
         return messageBuffer;
     }
 

@@ -1,21 +1,18 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CyclicBarrier;
+import java.nio.LongBuffer;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultMessageStoreImpl extends MessageStore {
+    private volatile long[] messageBuffer;
+    private volatile int messageBufferStart;
+
     private AtomicInteger messageCount = new AtomicInteger(0);
 
     private int batchSize = Constants.Message_Batch_Size;
-    private int messageSize = Constants.Message_Size;
-
-    private volatile ByteBuffer messageBuffer = ByteBuffer.allocate(batchSize * messageSize);
 
 
     private AtomicInteger concurrentPut = new AtomicInteger(0);
@@ -79,7 +76,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
-                    MessageWriter.flushAndShutDown(messageBuffer, messageCount.get() * Constants.Message_Size);
+                    MessageWriter.write(messageCount.get(), true);
                     readyForRead = true;
                     synchronized (this) {
                         this.notifyAll();
@@ -149,111 +146,71 @@ public class DefaultMessageStoreImpl extends MessageStore {
     }
 
 
-    Message[] messages = new Message[batchSize];
-    private void messageToBuffer(int count, Message message) {
-        messages[count] = message;
-    }
-
-
-    private ThreadLocal<Integer> local = new ThreadLocal<>();
-
-
-    private ConcurrentMap<Long, Thread> threadMap = new ConcurrentHashMap<>();
-    private volatile int threadCount = 0;
-
-    private volatile CyclicBarrier barrier;
-
-    private volatile boolean putInited = false;
-
-private long start = System.currentTimeMillis();
-    private void initPut() {
-        threadCount = threadMap.size();
-        barrier = new CyclicBarrier(threadCount, new Runnable() {
-            @Override
-            public void run() {
-                try {
-//
-//                    Message[] sort = new Message[batchSize * 2];
-//                    System.arraycopy(messages1, 0, sort, 0, batchSize);
-//                    System.arraycopy(messages, 0, sort, batchSize, batchSize);
-//
-//                    Arrays.parallelSort(sort, new Comparator<Message>() {
-//                        @Override
-//                        public int compare(Message o1, Message o2) {
-//                            return Long.compare(o1.getT(), o2.getT());
-//                        }
-//                    });
-//
-//                    for (int i = 0; i < sort.length; i++) {
-//                        if (i != sort[i].getT()) {
-//                            System.out.println(i + " " + sort[i].getT());
-//                            System.exit(1);
-//                        }
-//                    }
-                    messages = new Message[batchSize];
-                    long end = System.currentTimeMillis();
-                    System.out.println(end-start);
-                    start=end;
-                    System.out.println(1);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        putInited = true;
-    }
-
-    private void putPhase1(Message message) throws InterruptedException {
-        threadMap.putIfAbsent(Thread.currentThread().getId(), Thread.currentThread());
-        concurrentPut.incrementAndGet();
-        int count = messageCount.getAndIncrement();
-        if (count < batchSize - 1) {
-            messageToBuffer(count, message);
-            concurrentPut.decrementAndGet();
-
-        } else if (count == batchSize - 1) {
-            messageToBuffer(count, message);
-            concurrentPut.decrementAndGet();
-
-            while (concurrentPut.get() != 0) ;
-            messages = new Message[batchSize];
-            initPut();
-            synchronized (this) {
-                this.notifyAll();
-            }
-        } else if (count > batchSize - 1) {
-            synchronized (this) {
-                concurrentPut.decrementAndGet();
-                this.wait();
-            }
-            put(message);
-        }
-    }
-
-    private void putPhase2(Message message) throws Exception {
-        Integer index = local.get();
-        if (index == null) {
-            index = (int) Thread.currentThread().getId() % threadCount;
-        }
-        if (index >= messages.length) {
-            barrier.await();
-            index = (int) Thread.currentThread().getId() % threadCount;
-        }
-        messages[index] = message;
-        local.set(index + threadCount);
+    public DefaultMessageStoreImpl() {
+        messageBuffer = MessageWriter.getMessageBuffer();
+        messageBufferStart = MessageWriter.getMessageBufferStart();
     }
 
     @Override
     void put(Message message) {
         try {
-            if (!putInited) {
-                putPhase1(message);
-            } else {
-                putPhase2(message);
+            concurrentPut.incrementAndGet();
+            int count = messageCount.getAndIncrement();
+            if (count < batchSize - 1) {
+                messageToBuffer(count, message);
+                concurrentPut.decrementAndGet();
+
+            } else if (count == batchSize - 1) {
+                messageToBuffer(count, message);
+                concurrentPut.decrementAndGet();
+
+                while (concurrentPut.get() != 0) {
+                }
+
+                MessageWriter.write(Constants.Message_Batch_Size, false);
+                messageBuffer = MessageWriter.getMessageBuffer();
+                messageBufferStart = MessageWriter.getMessageBufferStart();
+
+                System.out.println(1);
+                messageCount.getAndUpdate(x -> 0);
+                synchronized (this) {
+                    this.notifyAll();
+                }
+            } else if (count > batchSize - 1) {
+                synchronized (this) {
+                    concurrentPut.decrementAndGet();
+                    this.wait();
+                }
+
+                concurrentPut.incrementAndGet();
+                count = messageCount.getAndIncrement();
+                messageToBuffer(count, message);
+                concurrentPut.decrementAndGet();
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(1);
         }
     }
+
+    private void messageToBuffer(int count, Message message) {
+        int startIndex = messageBufferStart + count * Constants.Message_Long_size;
+        messageBuffer[startIndex] = message.getT();
+        messageBuffer[startIndex + 1] = message.getA();
+//        messageBuffer[startIndex+2]=ByteBuffer.wrap(message.getBody()).getLong();
+        LongArrayUtils.byteArrayToLongArray(messageBuffer, startIndex + 2, message.getBody());
+//
+//        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+//        LongArrayUtils.longArraytoByteBuffer(messageBuffer, startIndex + 2, byteBuffer);
+//        if (Arrays.equals(message.getBody(),byteBuffer.array())){
+//        }else {
+//            System.out.println(message.getT());
+//            System.out.println(Arrays.toString(message.getBody()));
+//            System.out.println(Arrays.toString(byteBuffer.array()));
+//            System.out.println(messageBuffer[startIndex+2]);
+//
+//
+//                System.exit(-1);
+//        }
+    }
+
 }

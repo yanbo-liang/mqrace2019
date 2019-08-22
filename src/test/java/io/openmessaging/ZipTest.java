@@ -39,7 +39,7 @@ public class ZipTest {
 //        try {
 //            byte[] a = new byte[600000*8];
 //            for (int k = 0; k < 600000; k++) {
-//                ByteUtils.putLong(a, k, (k * 8));
+//                LongArrayUtils.putLong(a, k, (k * 8));
 //            }
 //
 //

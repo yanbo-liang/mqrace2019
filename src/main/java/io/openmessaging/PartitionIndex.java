@@ -23,10 +23,11 @@ public class PartitionIndex {
         }
     }
 
-    public synchronized static void buildIndex(ByteBuffer buffer) {
-        int i = 0;
-        while (i < buffer.limit()) {
-            long t = buffer.getLong(i);
+    public synchronized static void buildIndex(long[] messageBuffer, int count, int length) {
+        for (int i = 0; i < length; i++) {
+            int messageIndex = count - 1 - i;
+            int longIndex = messageIndex * Constants.Message_Long_size;
+            long t = messageBuffer[longIndex];
             if (!(tMin <= t && t <= tMax)) {
                 flushIndex();
                 tMin = (t / partitionSize) * partitionSize;
@@ -34,7 +35,7 @@ public class PartitionIndex {
             }
             tBuffer.putLong(t);
             totalByteIndexed += Constants.Message_Size;
-            i += Constants.Message_Size;
+//            i += Constants.Message_Size;
         }
     }
 

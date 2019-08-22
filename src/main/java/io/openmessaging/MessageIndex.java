@@ -12,13 +12,13 @@
 //
 //        for (int i = Constants.Index_Skip_Size; i < length; i += Constants.Index_Skip_Size) {
 //
-//            long currentT = ByteUtils.getLong(messageBuffer, i);
-//            long previousT = ByteUtils.getLong(messageBuffer, i - Constants.Message_Size);
+//            long currentT = LongArrayUtils.getLong(messageBuffer, i);
+//            long previousT = LongArrayUtils.getLong(messageBuffer, i - Constants.Message_Size);
 //
 //            while (i < length && currentT == previousT) {
 //                i += Constants.Message_Size;
 //                previousT = currentT;
-//                currentT = ByteUtils.getLong(messageBuffer, i);
+//                currentT = LongArrayUtils.getLong(messageBuffer, i);
 //            }
 //            positionMap.put(currentT, i + totalByteIndexed);
 //        }
