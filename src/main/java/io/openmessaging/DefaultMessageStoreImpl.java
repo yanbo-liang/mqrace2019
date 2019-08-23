@@ -45,7 +45,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         int startIndex = count * Constants.Message_Long_size;
         data[startIndex] = message.getT();
         data[startIndex + 1] = message.getA();
-//        LongArrayUtils.byteArrayToLongArray(data, startIndex + 2, message.getBody());
+        LongArrayUtils.byteArrayToLongArray(data, startIndex + 2, message.getBody());
 
     }
 
@@ -60,53 +60,57 @@ public class DefaultMessageStoreImpl extends MessageStore {
     AtomicInteger waitThread = new AtomicInteger(0);
 
     ConcurrentHashMap<Long,LocalInfo> map = new ConcurrentHashMap<>();
-
+int a=0;
     @Override
     void put(Message message) {
-//        try {
-//            LocalInfo localInfo = local.get();
-//            if (localInfo == null) {
-//                localInfo = new LocalInfo();
-//                local.set(localInfo);
-//                map.put(Thread.currentThread().getId(),localInfo);
-//            }
+        try {
+            LocalInfo localInfo = local.get();
+            if (localInfo == null) {
+                localInfo = new LocalInfo();
+                local.set(localInfo);
+                map.put(Thread.currentThread().getId(),localInfo);
+            }
 //toLong(localInfo.i,message,localInfo.data);
-//            int i = ++localInfo.i;
-//            if (i == 500000) {
-//                if (!threadCountInit.get()) {
-//                    if (threadCountInit.compareAndSet(false, true)) {
-//                        while (waitThread.get() == (map.size() - 1)) {
-//
-//                        }
-//                        barrier = new CyclicBarrier(map.size(), new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                map.forEach((x,y)->{
-//                                    y.i=0;
-//                                });
-//                                System.out.println(System.currentTimeMillis()-s);
-//                                s=System.currentTimeMillis();
-//                            }
-//                        });
-//                        synchronized (this) {
-//                            this.notifyAll();
-//                        }
-//                    }
-//                }
-//                if (barrier == null) {
-//                    synchronized (this) {
-//                        waitThread.incrementAndGet();
-//                        this.wait();
-//                    }
-//                }
-//                barrier.await();
-//            }
-//
-//
-//        } catch (
-//                Exception e) {
-//            e.printStackTrace();
-//        }
+            int i = ++localInfo.i;
+            if (i == 500000) {
+                if (!threadCountInit.get()) {
+                    if (threadCountInit.compareAndSet(false, true)) {
+                        while (waitThread.get() == (map.size() - 1)) {
+
+                        }
+                        barrier = new CyclicBarrier(map.size(), new Runnable() {
+                            @Override
+                            public void run() {
+                                map.forEach((x,y)->{
+                                    y.i=0;
+                                });
+                                a++;
+                                if (a>20){
+                                    System.exit(-1);
+                                }
+                                System.out.println(System.currentTimeMillis()-s);
+                                s=System.currentTimeMillis();
+                            }
+                        });
+                        synchronized (this) {
+                            this.notifyAll();
+                        }
+                    }
+                }
+                if (barrier == null) {
+                    synchronized (this) {
+                        waitThread.incrementAndGet();
+                        this.wait();
+                    }
+                }
+                barrier.await();
+            }
+
+
+        } catch (
+                Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
