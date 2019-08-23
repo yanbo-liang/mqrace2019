@@ -1,6 +1,5 @@
 package io.openmessaging;
 
-import javafx.scene.paint.CycleMethod;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
