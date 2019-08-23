@@ -45,7 +45,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         int startIndex = count * Constants.Message_Long_size;
         data[startIndex] = message.getT();
         data[startIndex + 1] = message.getA();
-        LongArrayUtils.byteArrayToLongArray(data, startIndex + 2, message.getBody());
+//        LongArrayUtils.byteArrayToLongArray(data, startIndex + 2, message.getBody());
 
     }
 
@@ -70,7 +70,7 @@ int a=0;
                 local.set(localInfo);
                 map.put(Thread.currentThread().getId(),localInfo);
             }
-//toLong(localInfo.i,message,localInfo.data);
+toLong(localInfo.i,message,localInfo.data);
             int i = ++localInfo.i;
             if (i == 500000) {
                 if (!threadCountInit.get()) {
@@ -85,7 +85,7 @@ int a=0;
                                     y.i=0;
                                 });
                                 a++;
-                                if (a>20){
+                                if (a>100){
                                     System.exit(-1);
                                 }
                                 System.out.println(System.currentTimeMillis()-s);
