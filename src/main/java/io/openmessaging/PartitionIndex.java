@@ -37,6 +37,7 @@ public class PartitionIndex {
             totalByteIndexed += Constants.Message_Size;
 //            i += Constants.Message_Size;
         }
+        System.out.println("totalByteCompressed "+ totalByteCompressed);
     }
 
     public static long getMessageStart(long tMin) {

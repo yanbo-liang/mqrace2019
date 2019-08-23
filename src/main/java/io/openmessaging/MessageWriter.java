@@ -67,6 +67,8 @@ public class MessageWriter {
                         synchronized (MessageWriter.class) {
                             MessageWriter.class.notify();
                         }
+                        messageBuffer=null;
+                        sortedMessageBuffer=null;
                         return;
                     }
                     long[] tmp1 = task.getMessageBuffer();
@@ -113,6 +115,7 @@ public class MessageWriter {
                     synchronized (MessageWriter.class) {
                         MessageWriter.class.wait();
                     }
+                    executor.shutdown();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -128,6 +131,7 @@ public class MessageWriter {
         long start = System.currentTimeMillis();
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
+        System.out.println("borrow time " + (System.currentTimeMillis() - start));
 
         for (int i = 0; i < length; i++) {
             int messageIndex = count - 1 - i;
