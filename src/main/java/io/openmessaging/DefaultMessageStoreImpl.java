@@ -3,6 +3,8 @@ package io.openmessaging;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,7 +23,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     private volatile boolean readyForRead = false;
 
-//    private void messageToBuffer(int count, Message message) {
+    //    private void messageToBuffer(int count, Message message) {
 //        int startIndex = count * Constants.Message_Size;
 //        messageBuffer.putLong(startIndex, message.getT());
 //        messageBuffer.putLong(startIndex + 8, message.getA());
@@ -29,41 +31,18 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
 //        }
 //    }
-
+//    ThreadLocal<BlockingQueue> local = new ThreadLocal<>();
+//
 //    @Override
 //    void put(Message message) {
+//        BlockingQueue queue = local.get();
+//        if (queue==null){
+//            queue=new ArrayBlockingQueue(50000000);
+//            local.set(queue);
+//        }
 //        try {
-//            concurrentPut.incrementAndGet();
-//            int count = messageCount.getAndIncrement();
-//            if (count < batchSize - 1) {
-//                messageToBuffer(count, message);
-//                concurrentPut.decrementAndGet();
+//            queue.put(message);
 //
-//            } else if (count == batchSize - 1) {
-//                messageToBuffer(count, message);
-//                concurrentPut.decrementAndGet();
-//
-//                while (concurrentPut.get() != 0) {
-//                }
-//
-//                MessageWriter.write(new MessageWriterTask(messageBuffer));
-//                messageBuffer = ByteBuffer.allocate(batchSize * messageSize);
-//                messageCount.getAndUpdate(x -> 0);
-//                synchronized (this) {
-//                    this.notifyAll();
-//                }
-//            } else if (count > batchSize - 1) {
-//                concurrentPut.decrementAndGet();
-//
-//                synchronized (this) {
-//                    this.wait();
-//                }
-//
-//                concurrentPut.incrementAndGet();
-//                count = messageCount.getAndIncrement();
-//                messageToBuffer(count, message);
-//                concurrentPut.decrementAndGet();
-//            }
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
@@ -76,7 +55,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
-                    MessageWriter.write(MessageWriterTask.createEndTask(messageBuffer,messageCount.get()));
+                    MessageWriter.write(MessageWriterTask.createEndTask(messageBuffer, messageCount.get()));
 
                     readyForRead = true;
                     synchronized (this) {
@@ -169,8 +148,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 while (concurrentPut.get() != 0) {
                 }
 
-                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
-                messageBuffer=new long[Constants.Message_Buffer_Size];
+//                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
+//                messageBuffer=new long[Constants.Message_Buffer_Size];
 
                 System.out.println(System.currentTimeMillis()-s);
                 s=System.currentTimeMillis();
