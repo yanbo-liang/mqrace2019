@@ -51,7 +51,9 @@ public class MessageWriter {
                         long[] tmp = task.getMessageBuffer();
 
                         System.arraycopy(tmp, 0, messageBuffer, 0, Constants.Message_Buffer_Size);
-
+                        synchronized (MessageWriter.class) {
+                            MessageWriter.class.notify();
+                        }
                         continue;
                     }
 
@@ -91,6 +93,9 @@ public class MessageWriter {
                     messageBufferCount -= Constants.Message_Batch_Size;
                     Arrays.fill(messageBuffer, Constants.Message_Buffer_Size, Constants.Message_Buffer_Size * 2, 0);
                     System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
+                    synchronized (MessageWriter.class) {
+                        MessageWriter.class.notify();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.exit(-1);
@@ -110,11 +115,12 @@ public class MessageWriter {
     public static void write(MessageWriterTask task) {
         try {
             taskQueue.put(task);
+            synchronized (MessageWriter.class) {
+                MessageWriter.class.wait();
+            }
             if (task.isEnd()){
                 try {
-                    synchronized (MessageWriter.class) {
-                        MessageWriter.class.wait();
-                    }
+
                     executor.shutdown();
                 } catch (Exception e) {
                     e.printStackTrace();

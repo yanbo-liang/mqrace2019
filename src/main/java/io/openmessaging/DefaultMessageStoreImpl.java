@@ -152,6 +152,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        messageBufferStart = MessageWriter.getMessageBufferStart();
 //    }
 
+    static long s = System.currentTimeMillis();
     @Override
     void put(Message message) {
         try {
@@ -171,7 +172,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
                 messageBuffer=new long[Constants.Message_Buffer_Size];
 
-                System.out.println(1);
+                System.out.println(System.currentTimeMillis()-s);
+                s=System.currentTimeMillis();
                 messageCount.getAndUpdate(x -> 0);
                 synchronized (this) {
                     this.notifyAll();
