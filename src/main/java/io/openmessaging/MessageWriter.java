@@ -7,9 +7,15 @@ import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageWriter {
+    private static ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static BlockingQueue<MessageWriterTask> taskQueue = new SynchronousQueue<>();
     private static AsynchronousFileChannel messageChannel, headerChannel;
 
     private static AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
@@ -26,8 +32,68 @@ public class MessageWriter {
         try {
             messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            executor.execute(new MessageWriterJob());
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static class MessageWriterJob implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    System.out.println("start");
+                    MessageWriterTask task = taskQueue.take();
+                    messageBufferCount += task.getBufferLimit();
+                    if (messageBufferStart == 0) {
+                        messageBufferStart = Constants.Message_Buffer_Size;
+                        long[] tmp = task.getMessageBuffer();
+
+                        System.arraycopy(tmp, 0, messageBuffer, 0, Constants.Message_Buffer_Size);
+
+                        continue;
+                    }
+
+                    if (task.isEnd()) {
+                        long[] tmp = task.getMessageBuffer();
+                        System.arraycopy(tmp, 0, messageBuffer, Constants.Message_Buffer_Size, task.getBufferLimit() * Constants.Message_Long_size);
+                        LongArrayUtils.countSort(MessageWriter.messageBuffer, sortedMessageBuffer, messageBufferCount);
+                        writeBatch(messageBufferCount, Constants.Message_Batch_Size, false);
+                        writeBatch(messageBufferCount - Constants.Message_Batch_Size, messageBufferCount - Constants.Message_Batch_Size, true);
+
+                        DirectBufferManager.changeToRead();
+                        PartitionIndex.flushIndex();
+                        synchronized (MessageWriter.class) {
+                            MessageWriter.class.notify();
+                        }
+                        return;
+                    }
+                    long[] tmp1 = task.getMessageBuffer();
+
+                    long totalStart = System.currentTimeMillis();
+                    long start = System.currentTimeMillis();
+                    System.arraycopy(tmp1, 0, messageBuffer, Constants.Message_Buffer_Size, Constants.Message_Buffer_Size);
+
+                    LongArrayUtils.countSort(messageBuffer, sortedMessageBuffer, messageBufferCount);
+                    System.out.println("sort time: " + (System.currentTimeMillis() - start));
+
+
+                    start = System.currentTimeMillis();
+                    writeBatch(messageBufferCount, Constants.Message_Batch_Size, false);
+                    System.out.println("write time:" + (System.currentTimeMillis() - start));
+
+                    long[] tmp = messageBuffer;
+                    messageBuffer = sortedMessageBuffer;
+                    sortedMessageBuffer = tmp;
+                    messageBufferCount -= Constants.Message_Batch_Size;
+                    Arrays.fill(messageBuffer, Constants.Message_Buffer_Size, Constants.Message_Buffer_Size * 2, 0);
+                    System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(-1);
+                }
+            }
         }
     }
 
@@ -39,48 +105,21 @@ public class MessageWriter {
         return messageBufferStart;
     }
 
-    public static void write(int count, boolean end) {
+    public static void write(MessageWriterTask task) {
         try {
-            messageBufferCount += count;
-            if (messageBufferStart == 0) {
-                messageBufferStart = Constants.Message_Buffer_Size;
-                return;
-            }
-
-            if (end) {
-                LongArrayUtils.countSort(messageBuffer, sortedMessageBuffer, messageBufferCount);
-                writeBatch(messageBufferCount,  Constants.Message_Batch_Size, false);
-                writeBatch(messageBufferCount- Constants.Message_Batch_Size,  messageBufferCount- Constants.Message_Batch_Size, true);
-
-                DirectBufferManager.changeToRead();
-                PartitionIndex.flushIndex();
-                synchronized (MessageWriter.class) {
-                    MessageWriter.class.notify();
+            taskQueue.put(task);
+            if (task.isEnd()){
+                try {
+                    synchronized (MessageWriter.class) {
+                        MessageWriter.class.wait();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                return;
             }
 
-
-            long totalStart = System.currentTimeMillis();
-
-            long start = System.currentTimeMillis();
-            LongArrayUtils.countSort(messageBuffer, sortedMessageBuffer, messageBufferCount);
-            System.out.println("sort time: " + (System.currentTimeMillis() - start));
-
-
-            start = System.currentTimeMillis();
-            writeBatch(messageBufferCount, Constants.Message_Batch_Size, false);
-            System.out.println("write time:" + (System.currentTimeMillis() - start));
-
-            long[] tmp = messageBuffer;
-            messageBuffer = sortedMessageBuffer;
-            sortedMessageBuffer = tmp;
-            messageBufferCount -= Constants.Message_Batch_Size;
-            Arrays.fill(messageBuffer, Constants.Message_Buffer_Size, Constants.Message_Buffer_Size * 2, 0);
-            System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(-1);
         }
     }
 

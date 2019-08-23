@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultMessageStoreImpl extends MessageStore {
-    private volatile long[] messageBuffer;
+    private volatile long[] messageBuffer = new long[Constants.Message_Buffer_Size];
     private volatile int messageBufferStart;
 
     private AtomicInteger messageCount = new AtomicInteger(0);
@@ -76,7 +76,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
-                    MessageWriter.write(messageCount.get(), true);
+                    MessageWriter.write(MessageWriterTask.createEndTask(messageBuffer,messageCount.get()));
+
                     readyForRead = true;
                     synchronized (this) {
                         this.notifyAll();
@@ -146,10 +147,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
     }
 
 
-    public DefaultMessageStoreImpl() {
-        messageBuffer = MessageWriter.getMessageBuffer();
-        messageBufferStart = MessageWriter.getMessageBufferStart();
-    }
+//    public DefaultMessageStoreImpl() {
+//        messageBuffer = MessageWriter.getMessageBuffer();
+//        messageBufferStart = MessageWriter.getMessageBufferStart();
+//    }
 
     @Override
     void put(Message message) {
@@ -167,9 +168,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 while (concurrentPut.get() != 0) {
                 }
 
-                MessageWriter.write(Constants.Message_Batch_Size, false);
-                messageBuffer = MessageWriter.getMessageBuffer();
-                messageBufferStart = MessageWriter.getMessageBufferStart();
+                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
+                messageBuffer=new long[Constants.Message_Buffer_Size];
 
                 System.out.println(1);
                 messageCount.getAndUpdate(x -> 0);
