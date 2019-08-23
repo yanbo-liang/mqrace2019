@@ -178,7 +178,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         messageBuffer[startIndex] = message.getT();
         messageBuffer[startIndex + 1] = message.getA();
 //        messageBuffer[startIndex+2]=ByteBuffer.wrap(message.getBody()).getLong();
-        LongArrayUtils.byteArrayToLongArray(messageBuffer, startIndex + 2, message.getBody());
+//        LongArrayUtils.byteArrayToLongArray(messageBuffer, startIndex + 2, message.getBody());
 //
 //        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
 //        LongArrayUtils.longArraytoByteBuffer(messageBuffer, startIndex + 2, byteBuffer);
