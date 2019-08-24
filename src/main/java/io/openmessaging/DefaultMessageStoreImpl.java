@@ -142,22 +142,22 @@ public class DefaultMessageStoreImpl extends MessageStore {
         map1.put(2L, new ArrayList<>());
         map1.put(3L, new ArrayList<>());
 
-        executorService1.execute(new Job(0L, queue1_1, map1, 2000));
-        executorService1.execute(new Job(1L, queue1_2, map1, 2000));
-        executorService1.execute(new Job(2L, queue1_3, map1, 2000));
-        executorService1.execute(new Job(3L, queue1_4, map1, 2000));
+        executorService1.execute(new Job(0L, queue1_1, map1, 10000));
+        executorService1.execute(new Job(1L, queue1_2, map1, 10000));
+        executorService1.execute(new Job(2L, queue1_3, map1, 10000));
+        executorService1.execute(new Job(3L, queue1_4, map1, 10000));
 
 
         map2.put(0L, new ArrayList<>(Arrays.asList(queue1_1, queue1_2)));
         map2.put(1L, new ArrayList<>(Arrays.asList(queue1_3, queue1_4)));
 
 
-        executorService2.execute(new Job(0L, queue2_1, map2, 4000));
-        executorService2.execute(new Job(1L, queue2_2, map2, 4000));
+        executorService2.execute(new Job(0L, queue2_1, map2, 15000));
+        executorService2.execute(new Job(1L, queue2_2, map2, 15000));
 
         map3.put(0L, new ArrayList<>(Arrays.asList(queue2_1, queue2_2)));
 
-        executorService3.execute(new Job(0L, null, map3, 8000));
+        executorService3.execute(new Job(0L, null, map3, 20000));
 
 
     }
