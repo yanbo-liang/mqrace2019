@@ -2,19 +2,15 @@ package io.openmessaging;
 
 
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
-import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultMessageStoreImpl extends MessageStore {
-    private volatile long[] messageBuffer = new long[Constants.Message_Buffer_Size];
+    //    private volatile long[] messageBuffer = new long[Constants.Message_Buffer_Size];
+    private volatile ByteBuffer messageBuffer = ByteBuffer.allocate(Constants.Message_Size * Constants.Message_Batch_Size);
+
     private volatile int messageBufferStart;
 
     private AtomicInteger messageCount = new AtomicInteger(0);
@@ -35,50 +31,19 @@ public class DefaultMessageStoreImpl extends MessageStore {
         initStart = System.currentTimeMillis();
     }
 
-    //    private void messageToBuffer(int count, Message message) {
-//        int startIndex = count * Constants.Message_Size;
-//        messageBuffer.putLong(startIndex, message.getT());
-//        messageBuffer.putLong(startIndex + 8, message.getA());
-//        for (int i = 0; i < messageSize - 16; i++) {
-//            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
-//        }
-//    }
-    private void toLong(int count, Message message, long[] data) {
-        int startIndex = count * Constants.Message_Long_size;
-        data[startIndex] = message.getT();
-        data[startIndex + 1] = message.getA();
-//        LongArrayUtils.byteArrayToLongArray(data, startIndex + 2, message.getBody());
-
-    }
-
-
-    static FileChannel channel;
-    static volatile MappedByteBuffer mappedByteBuffer;
-    static volatile long totalbytewritten = 0;
-
-    static {
-        try {
-            channel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE,StandardOpenOption.READ);
-            mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, totalbytewritten, Constants.Message_Batch_Size * Constants.Message_Size);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void messageToBuffer(int count, Message message) {
         int startIndex = count * Constants.Message_Size;
-        mappedByteBuffer.putLong(startIndex, message.getT());
-        mappedByteBuffer.putLong(startIndex + 8, message.getA());
+        messageBuffer.putLong(startIndex, message.getT());
+        messageBuffer.putLong(startIndex + 8, message.getA());
         for (int i = 0; i < Constants.Message_Size - 16; i++) {
-            mappedByteBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
         }
     }
+
 
     @Override
     void put(Message message) {
         try {
-
             concurrentPut.incrementAndGet();
             int count = messageCount.getAndIncrement();
             if (count < batchSize - 1) {
@@ -91,10 +56,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
                 while (concurrentPut.get() != 0) {
                 }
-                totalbytewritten += mappedByteBuffer.limit();
-                mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, totalbytewritten, Constants.Message_Batch_Size * Constants.Message_Size);
 
-
+                messageBuffer = ByteBuffer.allocate(Constants.Message_Size * Constants.Message_Batch_Size);
                 System.out.println(System.currentTimeMillis() - s);
                 s = System.currentTimeMillis();
                 messageCount.getAndUpdate(x -> 0);
@@ -125,7 +88,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!init.get()) {
                 if (init.compareAndSet(false, true)) {
-                    MessageWriter.write(MessageWriterTask.createEndTask(messageBuffer, messageCount.get()));
+//                    MessageWriter.write(MessageWriterTask.createEndTask(messageBuffer, messageCount.get()));
 
                     readyForRead = true;
                     synchronized (this) {
@@ -195,7 +158,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         return 0;
     }
 
-
 //    @Override
 //    void put(Message message) {
 //        try {
@@ -241,21 +203,14 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        int startIndex = messageBufferStart + count * Constants.Message_Long_size;
 //        messageBuffer[startIndex] = message.getT();
 //        messageBuffer[startIndex + 1] = message.getA();
-////        messageBuffer[startIndex+2]=ByteBuffer.wrap(message.getBody()).getLong();
 ////        LongArrayUtils.byteArrayToLongArray(messageBuffer, startIndex + 2, message.getBody());
-////
-////        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
-////        LongArrayUtils.longArraytoByteBuffer(messageBuffer, startIndex + 2, byteBuffer);
-////        if (Arrays.equals(message.getBody(),byteBuffer.array())){
-////        }else {
-////            System.out.println(message.getT());
-////            System.out.println(Arrays.toString(message.getBody()));
-////            System.out.println(Arrays.toString(byteBuffer.array()));
-////            System.out.println(messageBuffer[startIndex+2]);
-////
-////
-////                System.exit(-1);
-////        }
 //    }
+
+//private void toLong(int count, Message message, long[] data) {
+//    int startIndex = count * Constants.Message_Long_size;
+//    data[startIndex] = message.getT();
+//    data[startIndex + 1] = message.getA();
+////        LongArrayUtils.byteArrayToLongArray(data, startIndex + 2, message.getBody());
+//}
 
 }
