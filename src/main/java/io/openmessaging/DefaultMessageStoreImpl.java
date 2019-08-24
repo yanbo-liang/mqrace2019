@@ -49,16 +49,14 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     }
 
-    private static class WriteCompletionHandler implements CompletionHandler<Integer, LocalInfo> {
+    private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
         @Override
-        public void completed(Integer result, LocalInfo localInfo) {
-            synchronized (localInfo) {
-                localInfo.notify();
-            }
+        public void completed(Integer result, ByteBuffer buffer) {
+            DirectBufferManager.returnBuffer(buffer);
         }
 
         @Override
-        public void failed(Throwable exc, LocalInfo buffer) {
+        public void failed(Throwable exc, ByteBuffer buffer) {
             exc.printStackTrace();
         }
     }
@@ -81,12 +79,9 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
         void write() throws Exception {
             buffer.flip();
-            channel.write(buffer, totalByteWritten, this, new WriteCompletionHandler());
-            synchronized (this) {
-                this.wait();
-            }
+            channel.write(buffer, totalByteWritten, buffer, new WriteCompletionHandler());
+            buffer = DirectBufferManager.borrowBuffer();
             totalByteWritten += buffer.limit();
-            buffer.clear();
         }
     }
 
