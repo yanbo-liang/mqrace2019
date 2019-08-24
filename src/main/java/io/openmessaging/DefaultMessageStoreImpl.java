@@ -248,7 +248,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
             while (true) {
-                if (c > 100) {
+                if (c > 200) {
                     break;
                 }
                 System.out.println(last);
