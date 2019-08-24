@@ -127,14 +127,14 @@ public class DefaultMessageStoreImpl extends MessageStore {
     static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map3 = new ConcurrentHashMap<>();
 
     static {
-        MyArrayBlockingQueue queue1_1 = new MyArrayBlockingQueue(5000000);
-        MyArrayBlockingQueue queue1_2 = new MyArrayBlockingQueue(5000000);
-        MyArrayBlockingQueue queue1_3 = new MyArrayBlockingQueue(5000000);
-        MyArrayBlockingQueue queue1_4 = new MyArrayBlockingQueue(5000000);
+        MyArrayBlockingQueue queue1_1 = new MyArrayBlockingQueue(10000000);
+        MyArrayBlockingQueue queue1_2 = new MyArrayBlockingQueue(10000000);
+        MyArrayBlockingQueue queue1_3 = new MyArrayBlockingQueue(10000000);
+        MyArrayBlockingQueue queue1_4 = new MyArrayBlockingQueue(10000000);
 
 
-        MyArrayBlockingQueue queue2_1 = new MyArrayBlockingQueue(5000000);
-        MyArrayBlockingQueue queue2_2 = new MyArrayBlockingQueue(5000000);
+        MyArrayBlockingQueue queue2_1 = new MyArrayBlockingQueue(15000000);
+        MyArrayBlockingQueue queue2_2 = new MyArrayBlockingQueue(15000000);
 
 
         map1.put(0L, new ArrayList<>());
