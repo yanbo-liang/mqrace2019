@@ -213,11 +213,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     static void check(long a) {
         f++;
-        if (a > last) {
-            last = a;
-        } else {
+        if (a < last) {
             System.out.println(last + " " + a);
             System.exit(-1);
+        } else {
+            last = a;
+
         }
     }
 
