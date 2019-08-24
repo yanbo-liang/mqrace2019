@@ -2,8 +2,12 @@ package io.openmessaging;
 
 
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,222 +49,73 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     }
 
-    //    public boolean enQueue(int value) {
-//        if(length == data.length){
-//            return false;
-//        }
-//        data[start++] = value;
-//        length++;
-//        if(start == data.length){
-//            start=0;
-//        }
-//        return true;
-//
-//    }
-//
-//    /** Delete an element from the circular queue. Return true if the operation is successful. */
-//    public boolean deQueue() {
-//        if(length==0){
-//            return false;
-//        }
-//        data[end++]=0;
-//        length--;
-//        if(end == data.length){
-//            end = 0;
-//        }
-//        return true;
-//    }
-//
-//    /** Get the front item from the queue. */
-//    public int Front() {
-//        if(length==0){
-//            return -1;
-//        }
-//        return data[end];
-//
-//    }
-//
-//    /** Get the last item from the queue. */
-//    public int Rear() {
-//        if(length==0){
-//            return -1;
-//        }
-//        int tmp = start-1;
-//        if(tmp<0){
-//            tmp=data.length-1;
-//        }
-//        return data[tmp];
-//    }
-//
-//    /** Checks whether the circular queue is empty or not. */
-//    public boolean isEmpty() {
-//        return length == 0;
-//
-//    }
-//
-//    /** Checks whether the circular queue is full or not. */
-//    public boolean isFull() {
-//        return length==data.length;
-//
-//    }
-    static class ThreadBuffer {
-        long[] buffer = new long[1000000 * Constants.Message_Long_size];
-        int read = 0;
-        int write = 0;
-
-        void add(Message message) {
-            buffer[write++] = message.getT();
-            buffer[write++] = message.getA();
-            buffer[write++] = message.getT();
-            if (write == buffer.length) {
-                write = 0;
+    private static class WriteCompletionHandler implements CompletionHandler<Integer, LocalInfo> {
+        @Override
+        public void completed(Integer result, LocalInfo localInfo) {
+            synchronized (localInfo) {
+                localInfo.notify();
             }
-        }
-    }
-
-    static ExecutorService executorService1 = Executors.newFixedThreadPool(4);
-    static ExecutorService executorService2 = Executors.newFixedThreadPool(2);
-    static ExecutorService executorService3 = Executors.newFixedThreadPool(1);
-
-    static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map1 = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map2 = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map3 = new ConcurrentHashMap<>();
-
-    static {
-        MyArrayBlockingQueue queue1_1 = new MyArrayBlockingQueue(10000000);
-        MyArrayBlockingQueue queue1_2 = new MyArrayBlockingQueue(10000000);
-        MyArrayBlockingQueue queue1_3 = new MyArrayBlockingQueue(10000000);
-        MyArrayBlockingQueue queue1_4 = new MyArrayBlockingQueue(10000000);
-
-
-        MyArrayBlockingQueue queue2_1 = new MyArrayBlockingQueue(15000000);
-        MyArrayBlockingQueue queue2_2 = new MyArrayBlockingQueue(15000000);
-
-
-        map1.put(0L, new ArrayList<>());
-        map1.put(1L, new ArrayList<>());
-        map1.put(2L, new ArrayList<>());
-        map1.put(3L, new ArrayList<>());
-
-        executorService1.execute(new Job(0L, queue1_1, map1, 10000));
-        executorService1.execute(new Job(1L, queue1_2, map1, 10000));
-        executorService1.execute(new Job(2L, queue1_3, map1, 10000));
-        executorService1.execute(new Job(3L, queue1_4, map1, 10000));
-
-
-        map2.put(0L, new ArrayList<>(Arrays.asList(queue1_1, queue1_2)));
-        map2.put(1L, new ArrayList<>(Arrays.asList(queue1_3, queue1_4)));
-
-
-        executorService2.execute(new Job(0L, queue2_1, map2, 15000));
-        executorService2.execute(new Job(1L, queue2_2, map2, 15000));
-
-        map3.put(0L, new ArrayList<>(Arrays.asList(queue2_1, queue2_2)));
-
-        executorService3.execute(new Job(0L, null, map3, 20000));
-
-
-    }
-
-    static class Job implements Runnable {
-        long a;
-        MyArrayBlockingQueue queue;
-        ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map;
-        long delay;
-
-        public Job(Long a, MyArrayBlockingQueue queue, ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map, long delay) {
-            this.a = a;
-            this.queue = queue;
-            this.map = map;
-            this.delay = delay;
         }
 
         @Override
-        public void run() {
-            try {
-                Thread.sleep(delay);
-                while (true) {
-                    List<MyArrayBlockingQueue> blockingQueues = map.get(a);
-                    long min = Long.MAX_VALUE;
-                    int pointer = -1;
-                    for (int i = 0; i < blockingQueues.size(); i++) {
-                        MyArrayBlockingQueue queue = blockingQueues.get(i);
+        public void failed(Throwable exc, LocalInfo buffer) {
+            exc.printStackTrace();
+        }
+    }
 
-                        long take = queue.peek();
-                        if (take != -1 && take < min) {
-                            pointer = i;
-                            min = take;
-                        }
-                    }
-                    if (pointer != -1) {
-                        if (queue != null) {
-                            queue.put(blockingQueues.get(pointer).poll());
-                        } else {
-//                            System.out.println(min);
-                            check(blockingQueues.get(pointer).poll());
-                        }
-                    }
-                }
+    private class LocalInfo {
+        ByteBuffer buffer;
+        Path path;
+        AsynchronousFileChannel channel;
+        long totalByteWritten = 0;
+
+        LocalInfo() {
+            try {
+                buffer = ByteBuffer.allocate((int) Constants.Thread_Write_Buffer_Size);
+                path = Paths.get(Constants.Path + Thread.currentThread().getName());
+                channel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
 
+        void write() throws Exception {
+            buffer.flip();
+            channel.write(buffer, totalByteWritten, this, new WriteCompletionHandler());
+            synchronized (this) {
+                this.wait();
+            }
+            totalByteWritten += buffer.limit();
+            buffer.clear();
         }
     }
 
-    static long last = -1;
-    static long f = 0;
-
-    static void check(long a) {
-        f++;
-        if (a < last) {
-            System.out.println(last + " " + a);
-            System.exit(-1);
-        } else {
-            last = a;
-
-        }
-    }
-
-    ThreadLocal<MyArrayBlockingQueue> local = new ThreadLocal<>();
+    private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
 
     @Override
     void put(Message message) {
-        try {
-            MyArrayBlockingQueue threadBuffer = local.get();
-            if (threadBuffer == null) {
-                threadBuffer = new MyArrayBlockingQueue(5000000);
-                local.set(threadBuffer);
-                List<MyArrayBlockingQueue> blockingQueues = map1.get((Thread.currentThread().getId() % 4));
-                blockingQueues.add(threadBuffer);
-            }
-            threadBuffer.put(message.getT());
+        LocalInfo localInfo = local.get();
 
-        } catch (
-                Exception e) {
+        try {
+            if (localInfo == null) {
+                localInfo = new LocalInfo();
+                local.set(localInfo);
+            }
+            if (!localInfo.buffer.hasRemaining()) {
+                localInfo.write();
+
+            }
+            localInfo.buffer.putLong(message.getT());
+            localInfo.buffer.putLong(message.getA());
+            localInfo.buffer.put(message.getBody());
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    static int c = 0;
-
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        try {
-            while (true) {
-                if (c > 200) {
-                    break;
-                }
-                System.out.println(last);
-                System.out.println(System.currentTimeMillis() - initStart);
-                Thread.sleep(1000);
-                c++;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
+        System.out.println(System.currentTimeMillis() - initStart);
         System.exit(1);
         try {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
