@@ -2,8 +2,10 @@ package io.openmessaging;
 
 
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -49,60 +51,67 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     }
 
-    private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
-        @Override
-        public void completed(Integer result, ByteBuffer buffer) {
-            DirectBufferManager.returnBuffer(buffer);
-        }
 
-        @Override
-        public void failed(Throwable exc, ByteBuffer buffer) {
-            exc.printStackTrace();
-        }
-    }
+    static FileChannel channel;
+    static volatile MappedByteBuffer mappedByteBuffer;
+    static volatile long totalbytewritten = 0;
 
-    private class LocalInfo {
-        ByteBuffer buffer;
-        Path path;
-        AsynchronousFileChannel channel;
-        long totalByteWritten = 0;
+    static {
+        try {
+            channel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE,StandardOpenOption.READ);
+            mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, totalbytewritten, Constants.Message_Batch_Size * Constants.Message_Size);
 
-        LocalInfo() {
-            try {
-                buffer = DirectBufferManager.borrowBuffer();
-                path = Paths.get(Constants.Path + Thread.currentThread().getName());
-                channel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        void write() throws Exception {
-            buffer.flip();
-            channel.write(buffer, totalByteWritten, buffer, new WriteCompletionHandler());
-            buffer = DirectBufferManager.borrowBuffer();
-            totalByteWritten += buffer.limit();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
+    private void messageToBuffer(int count, Message message) {
+        int startIndex = count * Constants.Message_Size;
+        mappedByteBuffer.putLong(startIndex, message.getT());
+        mappedByteBuffer.putLong(startIndex + 8, message.getA());
+        for (int i = 0; i < Constants.Message_Size - 16; i++) {
+            mappedByteBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+        }
+    }
 
     @Override
     void put(Message message) {
-        LocalInfo localInfo = local.get();
-
         try {
-            if (localInfo == null) {
-                localInfo = new LocalInfo();
-                local.set(localInfo);
-            }
-            if (!localInfo.buffer.hasRemaining()) {
-                localInfo.write();
 
+            concurrentPut.incrementAndGet();
+            int count = messageCount.getAndIncrement();
+            if (count < batchSize - 1) {
+                messageToBuffer(count, message);
+                concurrentPut.decrementAndGet();
+
+            } else if (count == batchSize - 1) {
+                messageToBuffer(count, message);
+                concurrentPut.decrementAndGet();
+
+                while (concurrentPut.get() != 0) {
+                }
+                totalbytewritten += mappedByteBuffer.limit();
+                mappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, totalbytewritten, Constants.Message_Batch_Size * Constants.Message_Size);
+
+
+                System.out.println(System.currentTimeMillis() - s);
+                s = System.currentTimeMillis();
+                messageCount.getAndUpdate(x -> 0);
+                synchronized (this) {
+                    this.notifyAll();
+                }
+            } else if (count > batchSize - 1) {
+                synchronized (this) {
+                    concurrentPut.decrementAndGet();
+                    this.wait();
+                }
+
+                concurrentPut.incrementAndGet();
+                count = messageCount.getAndIncrement();
+                messageToBuffer(count, message);
+                concurrentPut.decrementAndGet();
             }
-            localInfo.buffer.putLong(message.getT());
-            localInfo.buffer.putLong(message.getA());
-            localInfo.buffer.put(message.getBody());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -228,25 +237,25 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        }
 //    }
 
-    private void messageToBuffer(int count, Message message) {
-        int startIndex = messageBufferStart + count * Constants.Message_Long_size;
-        messageBuffer[startIndex] = message.getT();
-        messageBuffer[startIndex + 1] = message.getA();
-//        messageBuffer[startIndex+2]=ByteBuffer.wrap(message.getBody()).getLong();
-//        LongArrayUtils.byteArrayToLongArray(messageBuffer, startIndex + 2, message.getBody());
-//
-//        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
-//        LongArrayUtils.longArraytoByteBuffer(messageBuffer, startIndex + 2, byteBuffer);
-//        if (Arrays.equals(message.getBody(),byteBuffer.array())){
-//        }else {
-//            System.out.println(message.getT());
-//            System.out.println(Arrays.toString(message.getBody()));
-//            System.out.println(Arrays.toString(byteBuffer.array()));
-//            System.out.println(messageBuffer[startIndex+2]);
-//
-//
-//                System.exit(-1);
-//        }
-    }
+//    private void messageToBuffer(int count, Message message) {
+//        int startIndex = messageBufferStart + count * Constants.Message_Long_size;
+//        messageBuffer[startIndex] = message.getT();
+//        messageBuffer[startIndex + 1] = message.getA();
+////        messageBuffer[startIndex+2]=ByteBuffer.wrap(message.getBody()).getLong();
+////        LongArrayUtils.byteArrayToLongArray(messageBuffer, startIndex + 2, message.getBody());
+////
+////        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+////        LongArrayUtils.longArraytoByteBuffer(messageBuffer, startIndex + 2, byteBuffer);
+////        if (Arrays.equals(message.getBody(),byteBuffer.array())){
+////        }else {
+////            System.out.println(message.getT());
+////            System.out.println(Arrays.toString(message.getBody()));
+////            System.out.println(Arrays.toString(byteBuffer.array()));
+////            System.out.println(messageBuffer[startIndex+2]);
+////
+////
+////                System.exit(-1);
+////        }
+//    }
 
 }
