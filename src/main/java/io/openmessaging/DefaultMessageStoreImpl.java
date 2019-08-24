@@ -133,8 +133,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
         MyArrayBlockingQueue queue1_4 = new MyArrayBlockingQueue(5000000);
 
 
-        MyArrayBlockingQueue queue2_1 = new MyArrayBlockingQueue(10000000);
-        MyArrayBlockingQueue queue2_2 = new MyArrayBlockingQueue(10000000);
+        MyArrayBlockingQueue queue2_1 = new MyArrayBlockingQueue(5000000);
+        MyArrayBlockingQueue queue2_2 = new MyArrayBlockingQueue(5000000);
 
 
         map1.put(0L, new ArrayList<>());
@@ -142,22 +142,22 @@ public class DefaultMessageStoreImpl extends MessageStore {
         map1.put(2L, new ArrayList<>());
         map1.put(3L, new ArrayList<>());
 
-        executorService1.execute(new Job(0L, queue1_1, map1, 1000));
-        executorService1.execute(new Job(1L, queue1_2, map1, 1000));
-        executorService1.execute(new Job(2L, queue1_3, map1, 1000));
-        executorService1.execute(new Job(3L, queue1_4, map1, 1000));
+        executorService1.execute(new Job(0L, queue1_1, map1, 2000));
+        executorService1.execute(new Job(1L, queue1_2, map1, 2000));
+        executorService1.execute(new Job(2L, queue1_3, map1, 2000));
+        executorService1.execute(new Job(3L, queue1_4, map1, 2000));
 
 
         map2.put(0L, new ArrayList<>(Arrays.asList(queue1_1, queue1_2)));
         map2.put(1L, new ArrayList<>(Arrays.asList(queue1_3, queue1_4)));
 
 
-        executorService2.execute(new Job(0L, queue2_1, map2, 3000));
-        executorService2.execute(new Job(1L, queue2_2, map2, 3000));
+        executorService2.execute(new Job(0L, queue2_1, map2, 4000));
+        executorService2.execute(new Job(1L, queue2_2, map2, 4000));
 
         map3.put(0L, new ArrayList<>(Arrays.asList(queue2_1, queue2_2)));
 
-        executorService3.execute(new Job(0L, null, map3, 6000));
+        executorService3.execute(new Job(0L, null, map3, 8000));
 
 
     }
@@ -229,7 +229,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         try {
             MyArrayBlockingQueue threadBuffer = local.get();
             if (threadBuffer == null) {
-                threadBuffer = new MyArrayBlockingQueue(500000);
+                threadBuffer = new MyArrayBlockingQueue(5000000);
                 local.set(threadBuffer);
                 List<MyArrayBlockingQueue> blockingQueues = map1.get((Thread.currentThread().getId() % 4));
                 blockingQueues.add(threadBuffer);
