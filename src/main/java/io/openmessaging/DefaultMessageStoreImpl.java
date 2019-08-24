@@ -118,37 +118,87 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
-    static ExecutorService executorService = Executors.newFixedThreadPool(10);
-    static ConcurrentHashMap<Long, List<BlockingQueue<Message>>> map = new ConcurrentHashMap<>();
+    static ExecutorService executorService1 = Executors.newFixedThreadPool(4);
+    static ExecutorService executorService2 = Executors.newFixedThreadPool(2);
+    static ExecutorService executorService3 = Executors.newFixedThreadPool(1);
+
+    static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map1 = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map2 = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map3 = new ConcurrentHashMap<>();
 
     static {
-        executorService.execute(new Job(0L));
-        executorService.execute(new Job(1L));
-        executorService.execute(new Job(2L));
-        executorService.execute(new Job(3L));
-        map.put(0L, new ArrayList<>());
-        map.put(1L, new ArrayList<BlockingQueue<Message>>());
-        map.put(2L, new ArrayList<BlockingQueue<Message>>());
-        map.put(3L, new ArrayList<BlockingQueue<Message>>());
+        MyArrayBlockingQueue queue1_1 = new MyArrayBlockingQueue(5000000);
+        MyArrayBlockingQueue queue1_2 = new MyArrayBlockingQueue(5000000);
+        MyArrayBlockingQueue queue1_3 = new MyArrayBlockingQueue(5000000);
+        MyArrayBlockingQueue queue1_4 = new MyArrayBlockingQueue(5000000);
+
+
+        MyArrayBlockingQueue queue2_1 = new MyArrayBlockingQueue(10000000);
+        MyArrayBlockingQueue queue2_2 = new MyArrayBlockingQueue(10000000);
+
+
+        map1.put(0L, new ArrayList<>());
+        map1.put(1L, new ArrayList<>());
+        map1.put(2L, new ArrayList<>());
+        map1.put(3L, new ArrayList<>());
+
+        executorService1.execute(new Job(0L, queue1_1, map1, 1000));
+        executorService1.execute(new Job(1L, queue1_2, map1, 1000));
+        executorService1.execute(new Job(2L, queue1_3, map1, 1000));
+        executorService1.execute(new Job(3L, queue1_4, map1, 1000));
+
+
+        map2.put(0L, new ArrayList<>(Arrays.asList(queue1_1, queue1_2)));
+        map2.put(1L, new ArrayList<>(Arrays.asList(queue1_3, queue1_4)));
+
+
+        executorService2.execute(new Job(0L, queue2_1, map2, 3000));
+        executorService2.execute(new Job(1L, queue2_2, map2, 3000));
+
+        map3.put(0L, new ArrayList<>(Arrays.asList(queue2_1, queue2_2)));
+
+        executorService3.execute(new Job(0L, null, map3, 6000));
+
 
     }
 
     static class Job implements Runnable {
         long a;
+        MyArrayBlockingQueue queue;
+        ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map;
+        long delay;
 
-        public Job(Long a) {
+        public Job(Long a, MyArrayBlockingQueue queue, ConcurrentHashMap<Long, List<MyArrayBlockingQueue>> map, long delay) {
             this.a = a;
+            this.queue = queue;
+            this.map = map;
+            this.delay = delay;
         }
 
         @Override
         public void run() {
             try {
+                Thread.sleep(delay);
                 while (true) {
-
-                    List<BlockingQueue<Message>> blockingQueues = map.get(a);
+                    List<MyArrayBlockingQueue> blockingQueues = map.get(a);
+                    long min = Long.MAX_VALUE;
+                    int pointer = -1;
                     for (int i = 0; i < blockingQueues.size(); i++) {
-                        BlockingQueue<Message> queue =  blockingQueues.get(i);
-                        queue.take();
+                        MyArrayBlockingQueue queue = blockingQueues.get(i);
+
+                        long take = queue.peek();
+                        if (take != -1 && take < min) {
+                            pointer = i;
+                            min = take;
+                        }
+                    }
+                    if (pointer != -1) {
+                        if (queue != null) {
+                            queue.put(blockingQueues.get(pointer).poll());
+                        } else {
+//                            System.out.println(min);
+                            check(blockingQueues.get(pointer).poll());
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -158,20 +208,32 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
+    static long last = -1;
+    static long f = 0;
 
-    ThreadLocal<BlockingQueue<Message>> local = new ThreadLocal<>();
+    static void check(long a) {
+        f++;
+        if (a > last) {
+            last = a;
+        } else {
+            System.out.println(last + " " + a);
+            System.exit(-1);
+        }
+    }
+
+    ThreadLocal<MyArrayBlockingQueue> local = new ThreadLocal<>();
 
     @Override
     void put(Message message) {
         try {
-            BlockingQueue<Message> threadBuffer = local.get();
+            MyArrayBlockingQueue threadBuffer = local.get();
             if (threadBuffer == null) {
-                threadBuffer = new ArrayBlockingQueue<>(300000);
+                threadBuffer = new MyArrayBlockingQueue(500000);
                 local.set(threadBuffer);
-                List<BlockingQueue<Message>> blockingQueues = map.get((Thread.currentThread().getId() % 4));
+                List<MyArrayBlockingQueue> blockingQueues = map1.get((Thread.currentThread().getId() % 4));
                 blockingQueues.add(threadBuffer);
             }
-            threadBuffer.put(message);
+            threadBuffer.put(message.getT());
 
         } catch (
                 Exception e) {
@@ -179,9 +241,25 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
+    static int c = 0;
+
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        System.out.println(System.currentTimeMillis() - initStart);
+        try {
+            while (true) {
+                if (c > 100) {
+                    break;
+                }
+                System.out.println(last);
+                System.out.println(System.currentTimeMillis() - initStart);
+                Thread.sleep(1000);
+                c++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
         System.exit(1);
         try {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
