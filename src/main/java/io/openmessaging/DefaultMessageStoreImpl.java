@@ -2,12 +2,8 @@ package io.openmessaging;
 
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,74 +45,143 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     }
 
-    static class LocalInfo {
-        long[] data = new long[500000 * Constants.Message_Long_size];
-        int i = 0;
-    }
-
-    ThreadLocal<LocalInfo> local = new ThreadLocal<>();
-    AtomicBoolean threadCountInit = new AtomicBoolean(false);
-    CyclicBarrier barrier;
-    AtomicInteger waitThread = new AtomicInteger(0);
-
-    ConcurrentHashMap<Long,LocalInfo> map = new ConcurrentHashMap<>();
-int a=0;
-//    @Override
-//    void put(Message message) {
-//        try {
-//            LocalInfo localInfo = local.get();
-//            if (localInfo == null) {
-//                localInfo = new LocalInfo();
-//                local.set(localInfo);
-//                map.put(Thread.currentThread().getId(),localInfo);
-//            }
-//toLong(localInfo.i,message,localInfo.data);
-//            int i = ++localInfo.i;
-//            if (i == 500000) {
-//                if (!threadCountInit.get()) {
-//                    if (threadCountInit.compareAndSet(false, true)) {
-//                        while (waitThread.get() == (map.size() - 1)) {
-//
-//                        }
-//                        barrier = new CyclicBarrier(map.size(), new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                map.forEach((x,y)->{
-//                                    y.i=0;
-//                                });
-//                                a++;
-//                                if (a>100){
-//                                    System.exit(-1);
-//                                }
-//                                System.out.println(System.currentTimeMillis()-s);
-//                                s=System.currentTimeMillis();
-//                            }
-//                        });
-//                        synchronized (this) {
-//                            this.notifyAll();
-//                        }
-//                    }
-//                }
-//                if (barrier == null) {
-//                    synchronized (this) {
-//                        waitThread.incrementAndGet();
-//                        this.wait();
-//                    }
-//                }
-//                barrier.await();
-//            }
-//
-//
-//        } catch (
-//                Exception e) {
-//            e.printStackTrace();
+    //    public boolean enQueue(int value) {
+//        if(length == data.length){
+//            return false;
 //        }
+//        data[start++] = value;
+//        length++;
+//        if(start == data.length){
+//            start=0;
+//        }
+//        return true;
 //
 //    }
+//
+//    /** Delete an element from the circular queue. Return true if the operation is successful. */
+//    public boolean deQueue() {
+//        if(length==0){
+//            return false;
+//        }
+//        data[end++]=0;
+//        length--;
+//        if(end == data.length){
+//            end = 0;
+//        }
+//        return true;
+//    }
+//
+//    /** Get the front item from the queue. */
+//    public int Front() {
+//        if(length==0){
+//            return -1;
+//        }
+//        return data[end];
+//
+//    }
+//
+//    /** Get the last item from the queue. */
+//    public int Rear() {
+//        if(length==0){
+//            return -1;
+//        }
+//        int tmp = start-1;
+//        if(tmp<0){
+//            tmp=data.length-1;
+//        }
+//        return data[tmp];
+//    }
+//
+//    /** Checks whether the circular queue is empty or not. */
+//    public boolean isEmpty() {
+//        return length == 0;
+//
+//    }
+//
+//    /** Checks whether the circular queue is full or not. */
+//    public boolean isFull() {
+//        return length==data.length;
+//
+//    }
+    static class ThreadBuffer {
+        long[] buffer = new long[1000000 * Constants.Message_Long_size];
+        int read = 0;
+        int write = 0;
+
+        void add(Message message) {
+            buffer[write++] = message.getT();
+            buffer[write++] = message.getA();
+            buffer[write++] = message.getT();
+            if (write == buffer.length) {
+                write = 0;
+            }
+        }
+    }
+
+    static ExecutorService executorService = Executors.newFixedThreadPool(10);
+    static ConcurrentHashMap<Long, List<BlockingQueue<Message>>> map = new ConcurrentHashMap<>();
+
+    static {
+        executorService.execute(new Job(0L));
+        executorService.execute(new Job(1L));
+        executorService.execute(new Job(2L));
+        executorService.execute(new Job(3L));
+        map.put(0L, new ArrayList<>());
+        map.put(1L, new ArrayList<BlockingQueue<Message>>());
+        map.put(2L, new ArrayList<BlockingQueue<Message>>());
+        map.put(3L, new ArrayList<BlockingQueue<Message>>());
+
+    }
+
+    static class Job implements Runnable {
+        long a;
+
+        public Job(Long a) {
+            this.a = a;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (true) {
+
+                    List<BlockingQueue<Message>> blockingQueues = map.get(a);
+                    for (int i = 0; i < blockingQueues.size(); i++) {
+                        BlockingQueue<Message> queue =  blockingQueues.get(i);
+                        queue.take();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+
+    ThreadLocal<BlockingQueue<Message>> local = new ThreadLocal<>();
+
+    @Override
+    void put(Message message) {
+        try {
+            BlockingQueue<Message> threadBuffer = local.get();
+            if (threadBuffer == null) {
+                threadBuffer = new ArrayBlockingQueue<>(300000);
+                local.set(threadBuffer);
+                List<BlockingQueue<Message>> blockingQueues = map.get((Thread.currentThread().getId() % 4));
+                blockingQueues.add(threadBuffer);
+            }
+            threadBuffer.put(message);
+
+        } catch (
+                Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        System.out.println(System.currentTimeMillis()-initStart);
+        System.out.println(System.currentTimeMillis() - initStart);
         System.exit(1);
         try {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
@@ -193,46 +258,46 @@ int a=0;
     }
 
 
-    @Override
-    void put(Message message) {
-        try {
-            concurrentPut.incrementAndGet();
-            int count = messageCount.getAndIncrement();
-            if (count < batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-
-            } else if (count == batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-
-                while (concurrentPut.get() != 0) {
-                }
-
-//                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
-//                messageBuffer=new long[Constants.Message_Buffer_Size];
-
-                System.out.println(System.currentTimeMillis()-s);
-                s=System.currentTimeMillis();
-                messageCount.getAndUpdate(x -> 0);
-                synchronized (this) {
-                    this.notifyAll();
-                }
-            } else if (count > batchSize - 1) {
-                synchronized (this) {
-                    concurrentPut.decrementAndGet();
-                    this.wait();
-                }
-
-                concurrentPut.incrementAndGet();
-                count = messageCount.getAndIncrement();
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    @Override
+//    void put(Message message) {
+//        try {
+//            concurrentPut.incrementAndGet();
+//            int count = messageCount.getAndIncrement();
+//            if (count < batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//
+//            } else if (count == batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//
+//                while (concurrentPut.get() != 0) {
+//                }
+//
+////                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
+////                messageBuffer=new long[Constants.Message_Buffer_Size];
+//
+//                System.out.println(System.currentTimeMillis()-s);
+//                s=System.currentTimeMillis();
+//                messageCount.getAndUpdate(x -> 0);
+//                synchronized (this) {
+//                    this.notifyAll();
+//                }
+//            } else if (count > batchSize - 1) {
+//                synchronized (this) {
+//                    concurrentPut.decrementAndGet();
+//                    this.wait();
+//                }
+//
+//                concurrentPut.incrementAndGet();
+//                count = messageCount.getAndIncrement();
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void messageToBuffer(int count, Message message) {
         int startIndex = messageBufferStart + count * Constants.Message_Long_size;
