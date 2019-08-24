@@ -41,6 +41,9 @@ public class MyArrayBlockingQueue {
      */
     private final Flag notFull = new Flag();
 
+    private final Flag notHalf = new Flag();
+
+
     /**
      * Returns item at index i.
      */
@@ -60,7 +63,12 @@ public class MyArrayBlockingQueue {
         items[putIndex] = x;
         if (++putIndex == items.length)
             putIndex = 0;
-        count.incrementAndGet();
+        int i = count.incrementAndGet();
+        if (i >= items.length / 2) {
+            synchronized (notHalf) {
+                notHalf.notifyAll();
+            }
+        }
         synchronized (notEmpty) {
             notEmpty.notifyAll();
         }
@@ -103,7 +111,12 @@ public class MyArrayBlockingQueue {
         return (count.get() == 0) ? -1 : dequeue();
     }
 
-    public long peek() {
+    public long peek() throws InterruptedException {
+        while (count.get() < items.length / 2) {
+            synchronized (notHalf) {
+                notHalf.wait();
+            }
+        }
         return (count.get() == 0) ? -1 : itemAt(takeIndex); // null when queue is empty
     }
 }
