@@ -71,7 +71,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
         LocalInfo() {
             try {
-                buffer = ByteBuffer.allocate((int) Constants.Thread_Write_Buffer_Size);
+                buffer = DirectBufferManager.borrowBuffer();
                 path = Paths.get(Constants.Path + Thread.currentThread().getName());
                 channel = AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             } catch (Exception e) {

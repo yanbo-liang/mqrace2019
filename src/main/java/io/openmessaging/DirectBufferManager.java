@@ -14,23 +14,23 @@ public class DirectBufferManager {
     private static BlockingQueue<ByteBuffer> headerBufferQueue = new LinkedBlockingQueue<>();
     private static ByteBuffer compressedBuffer;
 
-//    static {
-//        long queueSize = Constants.Direct_Memory_Size / Constants.Thread_Write_Buffer_Size;
-//        for (long i = 0; i < queueSize; i++) {
-//            ByteBuffer messageBuffer = ByteBuffer.allocateDirect((int) Constants.Thread_Write_Buffer_Size);
-//            messageBufferQueue.offer(messageBuffer);
+    static {
+        long queueSize = Constants.Direct_Memory_Size / Constants.Thread_Write_Buffer_Size;
+        for (long i = 0; i < queueSize; i++) {
+            ByteBuffer messageBuffer = ByteBuffer.allocateDirect((int) Constants.Thread_Write_Buffer_Size);
+            messageBufferQueue.offer(messageBuffer);
+
+        }
+//        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Message_Write_Buffer_Size + Constants.Header_Write_Buffer_Size);
+//        compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
 //
+//        for (long i = 0; i < queueSize; i++) {
+//            ByteBuffer messageBuffer = ByteBuffer.allocateDirect((int) Constants.Message_Write_Buffer_Size);
+//            messageBufferQueue.offer(messageBuffer);
+//            ByteBuffer headerBuffer = ByteBuffer.allocateDirect((int) Constants.Header_Write_Buffer_Size);
+//            headerBufferQueue.offer(headerBuffer);
 //        }
-////        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Message_Write_Buffer_Size + Constants.Header_Write_Buffer_Size);
-////        compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
-////
-////        for (long i = 0; i < queueSize; i++) {
-////            ByteBuffer messageBuffer = ByteBuffer.allocateDirect((int) Constants.Message_Write_Buffer_Size);
-////            messageBufferQueue.offer(messageBuffer);
-////            ByteBuffer headerBuffer = ByteBuffer.allocateDirect((int) Constants.Header_Write_Buffer_Size);
-////            headerBufferQueue.offer(headerBuffer);
-////        }
-//    }
+    }
 
     public static ByteBuffer getCompressedBuffer() {
         return compressedBuffer;
