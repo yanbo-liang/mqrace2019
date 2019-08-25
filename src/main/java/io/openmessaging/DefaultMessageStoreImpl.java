@@ -54,7 +54,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private ByteBuffer testBuffer = ByteBuffer.allocate(lo * Constants.Message_Size * tc);
     private ThreadLocal<Integer> local = new ThreadLocal<>();
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
-int a=0;
+    int a = 0;
+
     private class Task implements Runnable {
         @Override
         public void run() {
@@ -66,8 +67,8 @@ int a=0;
 
                         latch = new CountDownLatch(tc);
                         System.out.println(++a);
-                                        System.out.println(System.currentTimeMillis() - s);
-                s = System.currentTimeMillis();
+                        System.out.println(System.currentTimeMillis() - s);
+                        s = System.currentTimeMillis();
                         DefaultMessageStoreImpl.class.notifyAll();
                     }
 
@@ -79,6 +80,7 @@ int a=0;
         }
     }
 
+
     @Override
     void put(Message message) {
         try {
@@ -86,8 +88,9 @@ int a=0;
             if (localInfo == null) {
                 localInfo = 0;
             }
+            long tid= Thread.currentThread().getId();
 
-            int partStart = ((int) Thread.currentThread().getId() % tc) * lo + localInfo;
+            int partStart = ((int) tid % tc) * lo + localInfo;
 
             int startIndex = partStart * Constants.Message_Size;
             testBuffer.putLong(startIndex, message.getT());
@@ -98,14 +101,13 @@ int a=0;
             localInfo += 1;
             if (localInfo == lo) {
                 localInfo = 0;
-//                synchronized (DefaultMessageStoreImpl.class) {
-//                    latch.countDown();
-//                    DefaultMessageStoreImpl.class.wait();
-//                }
+                synchronized (DefaultMessageStoreImpl.class) {
+                    latch.countDown();
+                    DefaultMessageStoreImpl.class.wait();
+                }
 
             }
             local.set(localInfo);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
