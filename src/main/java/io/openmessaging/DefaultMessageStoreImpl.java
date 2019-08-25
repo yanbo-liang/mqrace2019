@@ -4,10 +4,7 @@ package io.openmessaging;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,7 +46,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        int i = 0;
 //    }
     private int lo = 1000000;
-    private int tc = 12;
+    private int tc = 10;
     private CountDownLatch latch = new CountDownLatch(tc);
     private ByteBuffer testBuffer = ByteBuffer.allocate(lo * Constants.Message_Size * tc);
     private ThreadLocal<Integer> local = new ThreadLocal<>();
@@ -61,7 +58,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
         public void run() {
             try {
                 while (true) {
-                    latch.await();
+                    latch.await(2, TimeUnit.SECONDS);
                     synchronized (DefaultMessageStoreImpl.class) {
 
 
