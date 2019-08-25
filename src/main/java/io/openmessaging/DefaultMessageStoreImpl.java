@@ -34,12 +34,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
     }
 //
     private void messageToBuffer(int count, Message message) {
-//        int startIndex = count * Constants.Message_Size;
-//        messageBuffer.putLong(startIndex, message.getT());
-//        messageBuffer.putLong(startIndex + 8, message.getA());
-//        for (int i = 0; i < Constants.Message_Size - 16; i++) {
-//            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
-//        }
+        int startIndex = count * Constants.Message_Size;
+        messageBuffer.putLong(startIndex, message.getT());
+        messageBuffer.putLong(startIndex + 8, message.getA());
+        for (int i = 0; i < Constants.Message_Size - 16; i++) {
+            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+        }
     }
 
     //    private class LocalInfo {
