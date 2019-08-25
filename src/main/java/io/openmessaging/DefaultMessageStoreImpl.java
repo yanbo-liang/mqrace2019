@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,44 +32,84 @@ public class DefaultMessageStoreImpl extends MessageStore {
     static long initStart;
 
     public DefaultMessageStoreImpl() {
+        executorService.execute(new Task());
         initStart = System.currentTimeMillis();
     }
+//
+//    private void messageToBuffer(int count, Message message) {
+//        int startIndex = count * Constants.Message_Size;
+//        messageBuffer.putLong(startIndex, message.getT());
+//        messageBuffer.putLong(startIndex + 8, message.getA());
+//        for (int i = 0; i < Constants.Message_Size - 16; i++) {
+//            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+//        }
+//    }
 
-    private void messageToBuffer(int count, Message message) {
-        int startIndex = count * Constants.Message_Size;
-        messageBuffer.putLong(startIndex, message.getT());
-        messageBuffer.putLong(startIndex + 8, message.getA());
-        for (int i = 0; i < Constants.Message_Size - 16; i++) {
-            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+    //    private class LocalInfo {
+//        int i = 0;
+//    }
+    private int lo = 1000000;
+    private int tc = 10;
+    private CountDownLatch latch = new CountDownLatch(tc);
+    private ByteBuffer testBuffer = ByteBuffer.allocate(lo * Constants.Message_Size * tc);
+    private ThreadLocal<Integer> local = new ThreadLocal<>();
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+int a=0;
+    private class Task implements Runnable {
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    latch.await();
+                    synchronized (DefaultMessageStoreImpl.class) {
+
+
+                        latch = new CountDownLatch(tc);
+                        System.out.println(++a);
+                                        System.out.println(System.currentTimeMillis() - s);
+                s = System.currentTimeMillis();
+                        DefaultMessageStoreImpl.class.notifyAll();
+                    }
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
     }
-
-    private class LocalInfo {
-        int i = 0;
-    }
-
-    private ByteBuffer testBuffer = ByteBuffer.allocate(1000000 * Constants.Message_Size * 12);
-    private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
 
     @Override
     void put(Message message) {
-        LocalInfo localInfo = local.get();
-        if (localInfo == null) {
-            localInfo = new LocalInfo();
+        try {
+            Integer localInfo = local.get();
+            if (localInfo == null) {
+                localInfo = 0;
+            }
+
+            int partStart = ((int) Thread.currentThread().getId() % tc) * lo + localInfo;
+
+            int startIndex = partStart * Constants.Message_Size;
+            testBuffer.putLong(startIndex, message.getT());
+            testBuffer.putLong(startIndex + 8, message.getA());
+            for (int i = 0; i < Constants.Message_Size - 16; i++) {
+                testBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+            }
+            localInfo += 1;
+            if (localInfo == lo) {
+                localInfo = 0;
+//                synchronized (DefaultMessageStoreImpl.class) {
+//                    latch.countDown();
+//                    DefaultMessageStoreImpl.class.wait();
+//                }
+
+            }
+            local.set(localInfo);
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        int partStart = ((int) Thread.currentThread().getId() % 12) * 1000000 + localInfo.i;
-
-        int startIndex = partStart * Constants.Message_Size;
-        testBuffer.putLong(startIndex, message.getT());
-        testBuffer.putLong(startIndex + 8, message.getA());
-        for (int i = 0; i < Constants.Message_Size - 16; i++) {
-            testBuffer.put(startIndex + 16 + i, message.getBody()[i]);
-        }
-        localInfo.i++;
-        if (localInfo.i == 1000000) {
-            localInfo.i = 0;
-        }
     }
 //    @Override
 //    void put(Message message) {
