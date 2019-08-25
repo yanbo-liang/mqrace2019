@@ -49,7 +49,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        int i = 0;
 //    }
     private int lo = 1000000;
-    private int tc = 10;
+    private int tc = 12;
     private CountDownLatch latch = new CountDownLatch(tc);
     private ByteBuffer testBuffer = ByteBuffer.allocate(lo * Constants.Message_Size * tc);
     private ThreadLocal<Integer> local = new ThreadLocal<>();
