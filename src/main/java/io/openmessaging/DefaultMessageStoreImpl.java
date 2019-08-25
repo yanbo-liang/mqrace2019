@@ -41,11 +41,32 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
-    ConcurrentHashMap<Long, Thread> map = new ConcurrentHashMap<>();
+    private class LocalInfo {
+        int i = 0;
+    }
+
+    private ByteBuffer testBuffer = ByteBuffer.allocate(1000000 * Constants.Message_Size * 12);
+    private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
 
     @Override
     void put(Message message) {
-        map.put(Thread.currentThread().getId(), Thread.currentThread());
+        LocalInfo localInfo = local.get();
+        if (localInfo == null) {
+            localInfo = new LocalInfo();
+        }
+
+        int partStart = ((int) Thread.currentThread().getId() % 12) * 1000000 + localInfo.i;
+
+        int startIndex = partStart * Constants.Message_Size;
+        testBuffer.putLong(startIndex, message.getT());
+        testBuffer.putLong(startIndex + 8, message.getA());
+        for (int i = 0; i < Constants.Message_Size - 16; i++) {
+            testBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+        }
+        localInfo.i++;
+        if (localInfo.i == 1000000) {
+            localInfo.i = 0;
+        }
     }
 //    @Override
 //    void put(Message message) {
@@ -88,7 +109,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
-        System.out.println(map.size());
         System.out.println(System.currentTimeMillis() - initStart);
         System.exit(1);
         try {
