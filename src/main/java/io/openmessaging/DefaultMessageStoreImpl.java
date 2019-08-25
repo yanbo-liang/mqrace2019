@@ -28,10 +28,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     static long initStart;
 
-//    public DefaultMessageStoreImpl() {
+    public DefaultMessageStoreImpl() {
 //        executorService.execute(new Task());
-//        initStart = System.currentTimeMillis();
-//    }
+        initStart = System.currentTimeMillis();
+    }
 //
     private void messageToBuffer(int count, Message message) {
 //        int startIndex = count * Constants.Message_Size;
