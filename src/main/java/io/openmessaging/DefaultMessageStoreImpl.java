@@ -4,6 +4,7 @@ package io.openmessaging;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,48 +41,54 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
     }
 
+    ConcurrentHashMap<Long, Thread> map = new ConcurrentHashMap<>();
 
     @Override
     void put(Message message) {
-        try {
-            concurrentPut.incrementAndGet();
-            int count = messageCount.getAndIncrement();
-            if (count < batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-
-            } else if (count == batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-
-                while (concurrentPut.get() != 0) {
-                }
-
-                messageBuffer = ByteBuffer.allocate(Constants.Message_Size * Constants.Message_Batch_Size);
-                System.out.println(System.currentTimeMillis() - s);
-                s = System.currentTimeMillis();
-                messageCount.getAndUpdate(x -> 0);
-                synchronized (this) {
-                    this.notifyAll();
-                }
-            } else if (count > batchSize - 1) {
-                synchronized (this) {
-                    concurrentPut.decrementAndGet();
-                    this.wait();
-                }
-
-                concurrentPut.incrementAndGet();
-                count = messageCount.getAndIncrement();
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        map.put(Thread.currentThread().getId(), Thread.currentThread());
     }
+//    @Override
+//    void put(Message message) {
+//        try {
+//            concurrentPut.incrementAndGet();
+//            int count = messageCount.getAndIncrement();
+//            if (count < batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//
+//            } else if (count == batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//
+//                while (concurrentPut.get() != 0) {
+//                }
+//
+//                messageBuffer = ByteBuffer.allocate(Constants.Message_Size * Constants.Message_Batch_Size);
+//                System.out.println(System.currentTimeMillis() - s);
+//                s = System.currentTimeMillis();
+//                messageCount.getAndUpdate(x -> 0);
+//                synchronized (this) {
+//                    this.notifyAll();
+//                }
+//            } else if (count > batchSize - 1) {
+//                synchronized (this) {
+//                    concurrentPut.decrementAndGet();
+//                    this.wait();
+//                }
+//
+//                concurrentPut.incrementAndGet();
+//                count = messageCount.getAndIncrement();
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+        System.out.println(map.size());
         System.out.println(System.currentTimeMillis() - initStart);
         System.exit(1);
         try {
