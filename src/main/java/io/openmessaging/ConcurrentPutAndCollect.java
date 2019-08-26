@@ -90,13 +90,13 @@ public class ConcurrentPutAndCollect {
 
                     ByteBuffer buffer = mergeAll(list, false);
 
-                    buffer.flip();
-                    while (buffer.hasRemaining()) {
-                        if (!check(buffer.getLong())) {
-                            System.out.println();
-                        }
-                        buffer.position(buffer.position() + Constants.Message_Size - 8);
-                    }
+//                    buffer.flip();
+//                    while (buffer.hasRemaining()) {
+//                        if (!check(buffer.getLong())) {
+//                            System.out.println();
+//                        }
+//                        buffer.position(buffer.position() + Constants.Message_Size - 8);
+//                    }
                     buffer.clear();
 
                     if (!isFinised) {
