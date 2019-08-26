@@ -41,10 +41,27 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        }
 //    }
 
+    private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
+
+    private static class LocalInfo {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
+    }
 
     @Override
-     void put(Message message) {
-        ConcurrentPutAndCollect.put(message);
+    void put(Message message) {
+        LocalInfo localInfo = local.get();
+        if (localInfo == null) {
+            localInfo = new LocalInfo();
+            local.set(localInfo);
+        }
+        ByteBuffer byteBuffer = localInfo.byteBuffer;
+        if (!byteBuffer.hasRemaining()) {
+            byteBuffer.clear();
+        }
+        byteBuffer.putLong(message.getT());
+        byteBuffer.putLong(message.getA());
+        byteBuffer.put(message.getBody());
+
     }
 
 //    @Override
@@ -89,7 +106,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
 //        try {
-//Thread.sleep(100000);
+//            Thread.sleep(100000);
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
