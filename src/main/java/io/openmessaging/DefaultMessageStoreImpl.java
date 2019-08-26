@@ -88,6 +88,11 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
+//        try {
+//Thread.sleep(100000);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
         System.out.println(System.currentTimeMillis() - initStart);
         System.exit(1);
         try {
