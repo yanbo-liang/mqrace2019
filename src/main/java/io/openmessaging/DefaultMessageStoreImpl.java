@@ -31,7 +31,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
     public DefaultMessageStoreImpl() {
         initStart = System.currentTimeMillis();
     }
-//
+
+    //
 //    private void messageToBuffer(int count, Message message) {
 //        int startIndex = count * Constants.Message_Size;
 //        messageBuffer.putLong(startIndex, message.getT());
@@ -41,7 +42,33 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        }
 //    }
 
+    static BlockingQueue<ByteBuffer> blockingQueue = new ArrayBlockingQueue<>(12);
+    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
+    static ByteBuffer myBuffer = ByteBuffer.allocate(12 * 500000 * Constants.Message_Size);
     private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
+
+    static {
+        executorService.execute(new CollectTask());
+    }
+
+    private static class CollectTask implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    ByteBuffer take = blockingQueue.take();
+                    take.flip();
+                    if (!myBuffer.hasRemaining()) {
+                        myBuffer.clear();
+                    }
+                    myBuffer.put(take);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
     private static class LocalInfo {
         ByteBuffer byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
@@ -49,18 +76,25 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     void put(Message message) {
-        LocalInfo localInfo = local.get();
-        if (localInfo == null) {
-            localInfo = new LocalInfo();
-            local.set(localInfo);
+        try {
+            LocalInfo localInfo = local.get();
+            if (localInfo == null) {
+                localInfo = new LocalInfo();
+                local.set(localInfo);
+            }
+            ByteBuffer byteBuffer = localInfo.byteBuffer;
+            if (!byteBuffer.hasRemaining()) {
+                blockingQueue.put(byteBuffer);
+                byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
+                localInfo.byteBuffer=byteBuffer;
+            }
+            byteBuffer.putLong(message.getT());
+            byteBuffer.putLong(message.getA());
+            byteBuffer.put(message.getBody());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        ByteBuffer byteBuffer = localInfo.byteBuffer;
-        if (!byteBuffer.hasRemaining()) {
-            byteBuffer.clear();
-        }
-        byteBuffer.putLong(message.getT());
-        byteBuffer.putLong(message.getA());
-        byteBuffer.put(message.getBody());
+
 
     }
 
