@@ -7,7 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class ConcurrentMerger {
-    private static ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private static ExecutorService executorService = Executors.newFixedThreadPool(8);
 
     public static Future<ByteBuffer> merge(ByteBuffer firstBuffer, ByteBuffer secondBuffer, ByteBuffer targetBuffer, boolean isEnd) {
         return executorService.submit(new MergeTask(firstBuffer, secondBuffer, targetBuffer, isEnd));
