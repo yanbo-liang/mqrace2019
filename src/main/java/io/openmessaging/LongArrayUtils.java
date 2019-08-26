@@ -8,7 +8,7 @@ public class LongArrayUtils {
         for (int i = 0; i < data.length; i++) {
             int bufferIndex = i / 8 + start;
             int byteIndex = i % 8;
-            int shiftIndex = 64 - 8 * (byteIndex + 1);
+            int shiftIndex = 56 - 8 * (byteIndex );
             long a = (data[i] & 0xffL) << shiftIndex;
             messageBuffer[bufferIndex] = a ^ messageBuffer[bufferIndex];
         }
