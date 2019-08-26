@@ -29,87 +29,24 @@ public class DefaultMessageStoreImpl extends MessageStore {
     static long initStart;
 
     public DefaultMessageStoreImpl() {
-//        executorService.execute(new Task());
         initStart = System.currentTimeMillis();
     }
 //
-    private void messageToBuffer(int count, Message message) {
-        int startIndex = count * Constants.Message_Size;
-        messageBuffer.putLong(startIndex, message.getT());
-        messageBuffer.putLong(startIndex + 8, message.getA());
-        for (int i = 0; i < Constants.Message_Size - 16; i++) {
-            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
-        }
+//    private void messageToBuffer(int count, Message message) {
+//        int startIndex = count * Constants.Message_Size;
+//        messageBuffer.putLong(startIndex, message.getT());
+//        messageBuffer.putLong(startIndex + 8, message.getA());
+//        for (int i = 0; i < Constants.Message_Size - 16; i++) {
+//            messageBuffer.put(startIndex + 16 + i, message.getBody()[i]);
+//        }
+//    }
+
+
+    @Override
+     void put(Message message) {
+        ConcurrentPutAndCollect.put(message);
     }
 
-    //    private class LocalInfo {
-//        int i = 0;
-//    }
-//    private int lo = 1000000;
-//    private int tc = 10;
-//    private CountDownLatch latch = new CountDownLatch(tc);
-//    private ByteBuffer testBuffer = ByteBuffer.allocate(lo * Constants.Message_Size * tc);
-//    private ThreadLocal<Integer> local = new ThreadLocal<>();
-//    private ExecutorService executorService = Executors.newSingleThreadExecutor();
-//    int a = 0;
-//
-//    private class Task implements Runnable {
-//        @Override
-//        public void run() {
-//            try {
-//                while (true) {
-//                    latch.await(2, TimeUnit.SECONDS);
-//                    synchronized (DefaultMessageStoreImpl.class) {
-//
-//
-//                        latch = new CountDownLatch(tc);
-//                        System.out.println(++a);
-//                        System.out.println(System.currentTimeMillis() - s);
-//                        s = System.currentTimeMillis();
-//                        DefaultMessageStoreImpl.class.notifyAll();
-//                    }
-//
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//        }
-//    }
-//
-//
-//    @Override
-//    void put(Message message) {
-//        try {
-//            Integer localInfo = local.get();
-//            if (localInfo == null) {
-//                localInfo = 0;
-//            }
-//            long tid= Thread.currentThread().getId();
-//
-//            int partStart = ((int) tid % tc) * lo + localInfo;
-//
-//            int startIndex = partStart * Constants.Message_Size;
-//            testBuffer.putLong(startIndex, message.getT());
-//            testBuffer.putLong(startIndex + 8, message.getA());
-//            for (int i = 0; i < Constants.Message_Size - 16; i++) {
-//                testBuffer.put(startIndex + 16 + i, message.getBody()[i]);
-//            }
-//            localInfo += 1;
-//            if (localInfo == lo) {
-//                localInfo = 0;
-//                synchronized (DefaultMessageStoreImpl.class) {
-//                    latch.countDown();
-//                    DefaultMessageStoreImpl.class.wait();
-//                }
-//
-//            }
-//            local.set(localInfo);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//
-//    }
 //    @Override
 //    void put(Message message) {
 //        try {
@@ -226,47 +163,47 @@ public class DefaultMessageStoreImpl extends MessageStore {
         }
         return 0;
     }
-
-    @Override
-    void put(Message message) {
-        try {
-            concurrentPut.incrementAndGet();
-            int count = messageCount.getAndIncrement();
-            if (count < batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-
-            } else if (count == batchSize - 1) {
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-
-                while (concurrentPut.get() != 0) {
-                }
-
-//                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
-//                messageBuffer=new long[Constants.Message_Buffer_Size];
-
-                System.out.println(System.currentTimeMillis()-s);
-                s=System.currentTimeMillis();
-                messageCount.getAndUpdate(x -> 0);
-                synchronized (this) {
-                    this.notifyAll();
-                }
-            } else if (count > batchSize - 1) {
-                synchronized (this) {
-                    concurrentPut.decrementAndGet();
-                    this.wait();
-                }
-
-                concurrentPut.incrementAndGet();
-                count = messageCount.getAndIncrement();
-                messageToBuffer(count, message);
-                concurrentPut.decrementAndGet();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//
+//    @Override
+//    void put(Message message) {
+//        try {
+//            concurrentPut.incrementAndGet();
+//            int count = messageCount.getAndIncrement();
+//            if (count < batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//
+//            } else if (count == batchSize - 1) {
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//
+//                while (concurrentPut.get() != 0) {
+//                }
+//
+////                MessageWriter.write(new MessageWriterTask(messageBuffer,Constants.Message_Batch_Size));
+////                messageBuffer=new long[Constants.Message_Buffer_Size];
+//
+//                System.out.println(System.currentTimeMillis()-s);
+//                s=System.currentTimeMillis();
+//                messageCount.getAndUpdate(x -> 0);
+//                synchronized (this) {
+//                    this.notifyAll();
+//                }
+//            } else if (count > batchSize - 1) {
+//                synchronized (this) {
+//                    concurrentPut.decrementAndGet();
+//                    this.wait();
+//                }
+//
+//                concurrentPut.incrementAndGet();
+//                count = messageCount.getAndIncrement();
+//                messageToBuffer(count, message);
+//                concurrentPut.decrementAndGet();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 //    private void messageToBuffer(int count, Message message) {
 //        int startIndex = messageBufferStart + count * Constants.Message_Long_size;
