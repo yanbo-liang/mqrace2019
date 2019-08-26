@@ -24,7 +24,7 @@ public class DemoTester {
         //正确性检测的次数
         int checkTimes = 500;
         //发送的线程数量
-        int sendTsNum = 10;
+        int sendTsNum = 12;
         //查询的线程数量
         int checkTsNum = 10;
         // 每次查询消息的最大跨度
