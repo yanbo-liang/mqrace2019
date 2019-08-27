@@ -56,24 +56,31 @@ public class UnsafeWriter {
     }
 
     private static class UnsafePutTask implements Runnable {
+
         @Override
         public void run() {
             try {
                 while (true) {
+
                     UnsafeBuffer buffer = blockingQueue.take();
 
                     long totalStart = System.currentTimeMillis();
+
                     sortedBufferLimit += buffer.getLimit();
+
                     if (isFirst) {
                         UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
                         isFirst = false;
                         continue;
                     } else {
-                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+                        if (isEnd) {
+                            UnsafeBuffer.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
+                            UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+                        } else {
+                            UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
+                        }
                     }
-                    if (isEnd) {
 
-                    }
 
                     long start = System.currentTimeMillis();
                     UnsafeSort.countSort(unsortedBuffer, sortedBuffer, sortedBufferLimit);
@@ -108,7 +115,7 @@ public class UnsafeWriter {
             buffer.putLong(sortedBuffer.getLong(i + 8));
             headerBuffer.putLong(sortedBuffer.getLong(i + 8));
             for (int j = 0; j < Constants.Message_Size - 16; j++) {
-                buffer.put(sortedBuffer.getByte(j + 16));
+                buffer.put(sortedBuffer.getByte(i + 16 + j));
             }
         }
         buffer.flip();
