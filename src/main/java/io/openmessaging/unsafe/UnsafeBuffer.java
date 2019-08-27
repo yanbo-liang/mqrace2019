@@ -9,6 +9,10 @@ public class UnsafeBuffer {
         this.bufferSize = bufferSize;
     }
 
+    long getBufferAddress() {
+        return bufferAddress;
+    }
+
     long getLong(int index) {
         return UnsafeWrapper.getUnsafe().getLong(bufferAddress + index);
     }
@@ -32,5 +36,9 @@ public class UnsafeBuffer {
             throw new RuntimeException("unequal buffer size");
         }
         UnsafeWrapper.getUnsafe().copyMemory(buffer1.bufferAddress, buffer2.bufferAddress, buffer1.bufferSize);
+    }
+
+    static void copy(long srcAddress, long destAddress, long length) {
+        UnsafeWrapper.getUnsafe().copyMemory(srcAddress, destAddress, length);
     }
 }

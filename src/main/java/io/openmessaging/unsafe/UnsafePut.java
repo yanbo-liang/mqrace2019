@@ -36,7 +36,8 @@ public class UnsafePut {
 
                 latch.await(1, TimeUnit.SECONDS);
                 System.out.println(1);
-                UnsafeBuffer.copy(unsafeBuffer,tmp);
+                UnsafeBuffer.copy(unsafeBuffer, tmp);
+                UnsafeSort.countSort(unsafeBuffer, tmp, batchSize);
                 messageCount.getAndUpdate(x -> 0);
                 synchronized (latch) {
                     latch.notifyAll();
