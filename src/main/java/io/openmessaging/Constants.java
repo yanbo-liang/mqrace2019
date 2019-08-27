@@ -2,14 +2,14 @@ package io.openmessaging;
 
 public class Constants {
 
-    //    static int Message_Size = 24;
+//    public static int Message_Size = 24;
 //    static int Message_Long_size = 3;
 //    static String Message_Path = "/Users/yanbo.liang/test/message";
 //    static String A_Path = "/Users/yanbo.liang/test/header";
 //    static String Path = "/Users/yanbo.liang/test/";
 
 
-    static int Message_Size = 50;
+    public static int Message_Size = 50;
     static int Message_Long_size = 7;
     static String Message_Path = "/alidata1/race2019/data/message";
     static String A_Path = "/alidata1/race2019/data/header";
