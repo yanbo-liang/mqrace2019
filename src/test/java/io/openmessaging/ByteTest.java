@@ -1,10 +1,14 @@
 package io.openmessaging;
 
+import sun.nio.ch.DirectBuffer;
+
+import java.nio.ByteBuffer;
+
 public class ByteTest {
     public static void main(String[] args) {
-        byte[] a = new byte[8];
-        putLong(a, 12321L, 0);
-        System.out.println(getLong(a, 0));
+        ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+        DirectBuffer directBuffer = (DirectBuffer) buffer;
+        System.out.println(directBuffer.address());
     }
 
     public static void putLong(byte[] bb, long x, int index) {

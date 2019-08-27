@@ -36,6 +36,10 @@ public class UnsafeBuffer {
         }
     }
 
+    byte getByte(int index) {
+        return UnsafeWrapper.getUnsafe().getByte(address + index);
+    }
+
     void free() {
         UnsafeWrapper.getUnsafe().freeMemory(address);
     }

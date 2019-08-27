@@ -24,10 +24,16 @@ public class UnsafePut {
             } else if (count == Constants.Message_Batch_Size - 1) {
                 putMessage(count, message);
 
-                latch.await(1, TimeUnit.SECONDS);
-                System.out.println(++batchCount);
-                unsafeBuffer.setLimit((count+1) * Constants.Message_Size);
-                UnsafeWriter.write(unsafeBuffer);
+                if (latch.await(1, TimeUnit.SECONDS)) {
+                    System.out.println(++batchCount);
+                    unsafeBuffer.setLimit((count + 1) * Constants.Message_Size);
+                    UnsafeWriter.write(unsafeBuffer);
+                } else {
+                    System.out.println(++batchCount);
+                    unsafeBuffer.setLimit((count + 1) * Constants.Message_Size);
+                    UnsafeWriter.write(unsafeBuffer);
+                }
+
                 if (batchCount % 2 == 1) {
                     unsafeBuffer = unsafeBuffer2;
                 } else {

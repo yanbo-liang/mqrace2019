@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class DirectBufferManager {
@@ -15,63 +14,36 @@ public class DirectBufferManager {
     private static ByteBuffer compressedBuffer;
 
     static {
-        long queueSize = Constants.Direct_Memory_Size / Constants.Message_Write_Buffer_Size;
+        compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
+        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Write_Message_Buffer_Size + Constants.Write_Header_Buffer_Size);
         for (long i = 0; i < queueSize; i++) {
-            ByteBuffer messageBuffer = ByteBuffer.allocateDirect((int) Constants.Message_Write_Buffer_Size);
-            messageBufferQueue.offer(messageBuffer);
-
+            messageBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Message_Buffer_Size));
+            headerBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Header_Buffer_Size));
         }
-//        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Message_Write_Buffer_Size + Constants.Header_Write_Buffer_Size);
-//        compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
-//
-//        for (long i = 0; i < queueSize; i++) {
-//            ByteBuffer messageBuffer = ByteBuffer.allocateDirect((int) Constants.Message_Write_Buffer_Size);
-//            messageBufferQueue.offer(messageBuffer);
-//            ByteBuffer headerBuffer = ByteBuffer.allocateDirect((int) Constants.Header_Write_Buffer_Size);
-//            headerBufferQueue.offer(headerBuffer);
-//        }
     }
 
     public static ByteBuffer getCompressedBuffer() {
         return compressedBuffer;
     }
 
-    public static ByteBuffer borrowBuffer() {
-        try {
-            ByteBuffer buffer = messageBufferQueue.take();
-            buffer.clear();
-            return buffer;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static ByteBuffer borrowBuffer() throws Exception {
+        ByteBuffer buffer = messageBufferQueue.take();
+        buffer.clear();
+        return buffer;
     }
 
-    public static void returnBuffer(ByteBuffer buffer) {
-        try {
-            messageBufferQueue.put(buffer);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public static void returnBuffer(ByteBuffer buffer) throws Exception {
+        messageBufferQueue.put(buffer);
     }
 
-    public static ByteBuffer borrowHeaderBuffer() {
-        try {
-            ByteBuffer buffer = headerBufferQueue.take();
-            buffer.clear();
-            return buffer;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static ByteBuffer borrowHeaderBuffer() throws Exception {
+        ByteBuffer buffer = headerBufferQueue.take();
+        buffer.clear();
+        return buffer;
     }
 
-    public static void returnHeaderBuffer(ByteBuffer buffer) {
-        try {
-            headerBufferQueue.put(buffer);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public static void returnHeaderBuffer(ByteBuffer buffer) throws Exception {
+        headerBufferQueue.put(buffer);
     }
 
     public static void changeToRead() {
@@ -82,10 +54,9 @@ public class DirectBufferManager {
             ((DirectBuffer) buffer).cleaner().clean();
         }
 
-        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / Constants.Direct_Read_Buffer_Size;
-
+        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / Constants.Read_Buffer_Size;
         for (long i = 0; i < queueSize; i++) {
-            ByteBuffer buffer = ByteBuffer.allocateDirect((int) Constants.Direct_Read_Buffer_Size);
+            ByteBuffer buffer = ByteBuffer.allocateDirect((int) Constants.Read_Buffer_Size);
             messageBufferQueue.offer(buffer);
         }
     }

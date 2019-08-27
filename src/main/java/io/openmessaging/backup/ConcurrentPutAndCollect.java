@@ -1,4 +1,8 @@
-package io.openmessaging;
+package io.openmessaging.backup;
+
+import io.openmessaging.Constants;
+import io.openmessaging.Message;
+import io.openmessaging.backup.ConcurrentMerger;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

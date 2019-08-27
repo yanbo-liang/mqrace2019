@@ -1,4 +1,6 @@
-package io.openmessaging;
+package io.openmessaging.backup;
+
+import io.openmessaging.Constants;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
