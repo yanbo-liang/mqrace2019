@@ -1,11 +1,9 @@
 package io.openmessaging;
 
 
-import sun.misc.Unsafe;
+import io.openmessaging.unsafe.UnsafePut;
 
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -127,7 +125,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     AtomicInteger a = new AtomicInteger(0);
     @Override
     void put(Message message) {
-PutUnsafe.put(message);
+UnsafePut.put(message);
 //        try {
 //            LocalInfo localInfo = local.get();
 //            if (localInfo == null) {
