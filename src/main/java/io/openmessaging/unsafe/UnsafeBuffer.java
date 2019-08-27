@@ -1,41 +1,47 @@
 package io.openmessaging.unsafe;
 
 public class UnsafeBuffer {
-    private long bufferAddress;
-    private long bufferSize;
+    private long address;
+    private int size;
+    private int limit;
 
-    UnsafeBuffer(int bufferSize) {
-        bufferAddress = UnsafeWrapper.getUnsafe().allocateMemory(bufferSize);
-        this.bufferSize = bufferSize;
+    UnsafeBuffer(int size) {
+        address = UnsafeWrapper.getUnsafe().allocateMemory(size);
+        this.size = size;
     }
 
-    long getBufferAddress() {
-        return bufferAddress;
+    long getAddress() {
+        return address;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
     long getLong(int index) {
-        return UnsafeWrapper.getUnsafe().getLong(bufferAddress + index);
+        return UnsafeWrapper.getUnsafe().getLong(address + index);
     }
 
-    void putLong(long index, long l) {
-        UnsafeWrapper.getUnsafe().putLong(bufferAddress + index, l);
+    void putLong(int index, long l) {
+        UnsafeWrapper.getUnsafe().putLong(address + index, l);
     }
 
-    void put(long index, byte[] data) {
+    void put(int index, byte[] data) {
         for (long i = 0; i < data.length; i++) {
-            UnsafeWrapper.getUnsafe().putByte(bufferAddress + index + i, data[(int) i]);
+            UnsafeWrapper.getUnsafe().putByte(address + index + i, data[(int) i]);
         }
     }
 
     void free() {
-        UnsafeWrapper.getUnsafe().freeMemory(bufferAddress);
+        UnsafeWrapper.getUnsafe().freeMemory(address);
     }
 
-    static void copy(UnsafeBuffer buffer1, UnsafeBuffer buffer2) {
-        if (buffer1.bufferSize != buffer2.bufferSize) {
-            throw new RuntimeException("unequal buffer size");
-        }
-        UnsafeWrapper.getUnsafe().copyMemory(buffer1.bufferAddress, buffer2.bufferAddress, buffer1.bufferSize);
+    static void copy(UnsafeBuffer buffer1, int start1, UnsafeBuffer buffer2, int start2, int length) {
+        UnsafeWrapper.getUnsafe().copyMemory(buffer1.address + start1, buffer2.address + start2, length);
     }
 
     static void copy(long srcAddress, long destAddress, long length) {

@@ -26,7 +26,7 @@ public class PartitionIndex {
     public synchronized static void buildIndex(long[] messageBuffer, int count, int length) {
         for (int i = 0; i < length; i++) {
             int messageIndex = count - 1 - i;
-            int longIndex = messageIndex * Constants.Message_Long_size;
+            int longIndex = messageIndex * Constants.Message_Size;
             long t = messageBuffer[longIndex];
             if (!(tMin <= t && t <= tMax)) {
                 flushIndex();
