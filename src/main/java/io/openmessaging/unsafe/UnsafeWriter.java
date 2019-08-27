@@ -5,8 +5,14 @@ import io.openmessaging.DirectBufferManager;
 import io.openmessaging.PartitionIndex;
 import sun.nio.ch.DirectBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class UnsafeWriter {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -16,9 +22,37 @@ public class UnsafeWriter {
     private static int sortedBufferLimit = 0;
     private static boolean isFirst = true;
     private static boolean isEnd = false;
+    private static AsynchronousFileChannel messageChannel, headerChannel;
+
+    private static AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
+
+    private static long messageTotalByteWritten = 0;
+    private static long headerTotalByteWritten = 0;
 
     static {
-        executorService.execute(new UnsafePutTask());
+        try {
+            messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            executorService.execute(new UnsafePutTask());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void write(UnsafeBuffer buffer) throws Exception {
+        boolean offer = blockingQueue.offer(buffer, 5, TimeUnit.SECONDS);
+        if (!offer) {
+            System.exit(1);
+        }
+    }
+
+    public static void writeEnd(UnsafeBuffer buffer) throws Exception {
+        isEnd = true;
+        boolean offer = blockingQueue.offer(buffer, 5, TimeUnit.SECONDS);
+        if (!offer) {
+            System.exit(1);
+        }
     }
 
     private static class UnsafePutTask implements Runnable {
@@ -47,7 +81,7 @@ public class UnsafeWriter {
 
 
                     start = System.currentTimeMillis();
-                    processBatch(sortedBufferLimit,Constants.Message_Buffer_Size);
+                    processBatch(sortedBufferLimit, Constants.Message_Buffer_Size);
                     System.out.println("batch time: " + (System.currentTimeMillis() - start));
 
                     UnsafeBuffer tmp = unsortedBuffer;
@@ -84,23 +118,43 @@ public class UnsafeWriter {
 
 //        PartitionIndex.buildIndex(sortedMessageBuffer, count, count);
 
-//        asyncWrite(buffer, headerBuffer, isEnd);
+        asyncWrite(buffer, headerBuffer, isEnd);
         DirectBufferManager.returnBuffer(buffer);
         DirectBufferManager.returnHeaderBuffer(headerBuffer);
     }
 
-    public static void write(UnsafeBuffer buffer) throws Exception {
-        boolean offer = blockingQueue.offer(buffer, 5, TimeUnit.SECONDS);
-        if (!offer) {
-            System.exit(1);
+
+    private static void asyncWrite(ByteBuffer messageBuffer, ByteBuffer headerBuffer, boolean end) {
+        pendingAsyncWrite.incrementAndGet();
+        pendingAsyncWrite.incrementAndGet();
+        messageChannel.write(messageBuffer, messageTotalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+        headerChannel.write(headerBuffer, headerTotalByteWritten, pendingAsyncWrite, new WriteCompletionHandler());
+
+        messageTotalByteWritten += messageBuffer.limit();
+        headerTotalByteWritten += headerBuffer.limit();
+
+        if (end) {
+            while (pendingAsyncWrite.get() != 0) ;
+            try {
+                messageChannel.close();
+                headerChannel.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+        System.out.println("messageTotalByteWritten " + messageTotalByteWritten);
+        System.out.println("headerTotalByteWritten " + headerTotalByteWritten);
     }
 
-    public static void writeEnd(UnsafeBuffer buffer) throws Exception {
-        isEnd = true;
-        boolean offer = blockingQueue.offer(buffer, 5, TimeUnit.SECONDS);
-        if (!offer) {
-            System.exit(1);
+    private static class WriteCompletionHandler implements CompletionHandler<Integer, AtomicInteger> {
+        @Override
+        public void completed(Integer result, AtomicInteger pendingAsyncWrite) {
+            pendingAsyncWrite.decrementAndGet();
+        }
+
+        @Override
+        public void failed(Throwable exc, AtomicInteger pendingAsyncWrite) {
+            exc.printStackTrace();
         }
     }
 }
