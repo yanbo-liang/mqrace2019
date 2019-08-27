@@ -32,6 +32,7 @@ public class UnsafePut {
                 messageToBuffer(count, message);
 
                 latch.await(1, TimeUnit.SECONDS);
+                unsafeBuffer.free();
                 unsafeBuffer = new UnsafeBuffer(batchSize * Constants.Message_Size);
                 messageCount.getAndUpdate(x -> 0);
                 synchronized (latch) {

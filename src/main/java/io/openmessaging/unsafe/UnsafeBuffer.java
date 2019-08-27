@@ -16,4 +16,8 @@ public class UnsafeBuffer {
             UnsafeWrapper.getUnsafe().putByte(bufferAddress + index + i, data[(int) i]);
         }
     }
+
+    void free() {
+        UnsafeWrapper.getUnsafe().freeMemory(bufferAddress);
+    }
 }
