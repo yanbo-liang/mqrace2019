@@ -18,6 +18,7 @@ public class UnsafeSort {
         long start1 = System.currentTimeMillis();
         System.out.println("min max " + (start1 - start));
         //这里k的大小是要排序的数组中，元素大小的极值差+1
+        System.out.println(min+" "+max);
         int distinct = (int) (max - min + 1);
         int times[] = new int[distinct];
         long start2 = System.currentTimeMillis();

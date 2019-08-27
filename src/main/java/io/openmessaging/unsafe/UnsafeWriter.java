@@ -2,10 +2,7 @@ package io.openmessaging.unsafe;
 
 import io.openmessaging.Constants;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.*;
 
 public class UnsafeWriter {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -34,6 +31,7 @@ public class UnsafeWriter {
                     } else {
                         UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     }
+                    System.out.println(bufferLimit);
                     UnsafeSort.countSort(unsortedBuffer, sortedBuffer, bufferLimit);
 
 
@@ -49,6 +47,9 @@ public class UnsafeWriter {
     }
 
     public static void write(UnsafeBuffer buffer) throws Exception {
-        blockingQueue.put(buffer);
+        boolean offer = blockingQueue.offer(buffer, 5, TimeUnit.SECONDS);
+        if (!offer){
+            System.exit(1);
+        }
     }
 }
