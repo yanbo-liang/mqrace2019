@@ -42,7 +42,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //        }
 //    }
 
-    static BlockingQueue<ByteBuffer> blockingQueue = new ArrayBlockingQueue<>(12);
+    static BlockingQueue<Message[]> blockingQueue = new ArrayBlockingQueue<>(12);
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
     static ByteBuffer myBuffer = ByteBuffer.allocate(12 * 500000 * Constants.Message_Size);
     private ThreadLocal<LocalInfo> local = new ThreadLocal<>();
@@ -56,12 +56,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
         public void run() {
             while (true) {
                 try {
-                    ByteBuffer take = blockingQueue.take();
-                    take.flip();
-                    if (!myBuffer.hasRemaining()) {
-                        myBuffer.clear();
-                    }
-                    myBuffer.put(take);
+                    Message[] take = blockingQueue.take();
+//                    take.flip();
+//                    if (!myBuffer.hasRemaining()) {
+//                        myBuffer.clear();
+//                    }
+//                    myBuffer.put(take);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -71,7 +71,26 @@ public class DefaultMessageStoreImpl extends MessageStore {
     }
 
     private static class LocalInfo {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
+//        ByteBuffer byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
+
+        Message[] messages = new Message[500000];
+        int index = 0;
+
+        void put(Message message) {
+            messages[index++] = message;
+        }
+
+        boolean hasRemaining() {
+            return index < 500000;
+        }
+
+        Message[] reset() {
+            Message[] tmp = messages;
+            messages = new Message[500000];
+            index = 0;
+            return tmp;
+        }
+
     }
 
     @Override
@@ -82,15 +101,20 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 localInfo = new LocalInfo();
                 local.set(localInfo);
             }
-            ByteBuffer byteBuffer = localInfo.byteBuffer;
-            if (!byteBuffer.hasRemaining()) {
-                blockingQueue.put(byteBuffer);
-                byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
-                localInfo.byteBuffer=byteBuffer;
+
+            if (!localInfo.hasRemaining()) {
+                blockingQueue.put(localInfo.reset());
             }
-            byteBuffer.putLong(message.getT());
-            byteBuffer.putLong(message.getA());
-            byteBuffer.put(message.getBody());
+            localInfo.put(message);
+//            ByteBuffer byteBuffer = localInfo.byteBuffer;
+//            if (!byteBuffer.hasRemaining()) {
+//                blockingQueue.put(byteBuffer);
+//                byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
+//                localInfo.byteBuffer = byteBuffer;
+//            }
+//            byteBuffer.putLong(message.getT());
+//            byteBuffer.putLong(message.getA());
+//            byteBuffer.put(message.getBody());
         } catch (Exception e) {
             e.printStackTrace();
         }
