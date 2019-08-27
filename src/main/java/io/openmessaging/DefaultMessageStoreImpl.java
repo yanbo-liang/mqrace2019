@@ -1,6 +1,9 @@
 package io.openmessaging;
 
 
+import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
@@ -99,7 +102,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     }
 
     private static class LocalInfo {
-//        ByteBuffer byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
+       ByteBuffer byteBuffer = ByteBuffer.allocate(500000 * Constants.Message_Size);
 
         Message[] messages = new Message[10000];
         int index = 0;
@@ -124,7 +127,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     AtomicInteger a = new AtomicInteger(0);
     @Override
     void put(Message message) {
-        a.incrementAndGet();
+PutUnsafe.put(message);
 //        try {
 //            LocalInfo localInfo = local.get();
 //            if (localInfo == null) {
