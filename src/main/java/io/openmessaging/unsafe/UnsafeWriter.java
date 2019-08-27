@@ -69,7 +69,7 @@ public class UnsafeWriter {
                     sortedBufferLimit += buffer.getLimit();
 
                     if (isFirst) {
-                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
+                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                         isFirst = false;
                         continue;
                     } else {
@@ -80,7 +80,6 @@ public class UnsafeWriter {
                             UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
                         }
                     }
-
 
                     long start = System.currentTimeMillis();
                     UnsafeSort.countSort(unsortedBuffer, sortedBuffer, sortedBufferLimit);
