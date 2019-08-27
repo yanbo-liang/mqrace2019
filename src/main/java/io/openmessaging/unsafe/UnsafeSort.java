@@ -34,8 +34,11 @@ public class UnsafeSort {
 
 
         start = System.currentTimeMillis();
-        for (int i = times.length - 2; i >= 0; i--) {
-            times[i] = times[i] + times[i + 1];
+//        for (int i = times.length - 2; i >= 0; i--) {
+//            times[i] = times[i] + times[i + 1];
+//        }
+        for (int i = 1; i < times.length; i++) {
+            times[i] = times[i] + times[i - 1];
         }
         System.out.println("add  " + (System.currentTimeMillis() - start));
 

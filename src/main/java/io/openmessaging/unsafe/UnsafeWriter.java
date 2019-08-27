@@ -81,7 +81,7 @@ public class UnsafeWriter {
 
 
                     start = System.currentTimeMillis();
-                    processBatch(sortedBufferLimit, Constants.Message_Buffer_Size);
+                    processBatch(0, Constants.Message_Buffer_Size);
                     System.out.println("batch time: " + (System.currentTimeMillis() - start));
 
                     UnsafeBuffer tmp = unsortedBuffer;
@@ -96,14 +96,14 @@ public class UnsafeWriter {
         }
     }
 
-    private static void processBatch(int limit, int last) throws Exception {
-        long start = System.currentTimeMillis();
+    private static void processBatch(int start, int limit) throws Exception {
+        long startTime = System.currentTimeMillis();
         ByteBuffer buffer = DirectBufferManager.borrowBuffer();
         ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
-        System.out.println("borrow time " + (System.currentTimeMillis() - start));
+        System.out.println("borrow time " + (System.currentTimeMillis() - startTime));
 
-        start = System.currentTimeMillis();
-        for (int i = limit - Constants.Message_Size; i >= last; i -= Constants.Message_Size) {
+        startTime = System.currentTimeMillis();
+        for (int i = start; i < limit; i += Constants.Message_Size) {
             buffer.putLong(sortedBuffer.getLong(i));
             buffer.putLong(sortedBuffer.getLong(i + 8));
             headerBuffer.putLong(sortedBuffer.getLong(i + 8));
@@ -113,7 +113,7 @@ public class UnsafeWriter {
         }
         buffer.flip();
         headerBuffer.flip();
-        System.out.println("fill time " + (System.currentTimeMillis() - start));
+        System.out.println("fill time " + (System.currentTimeMillis() - startTime));
 
 
 //        PartitionIndex.buildIndex(sortedMessageBuffer, count, count);
