@@ -107,8 +107,8 @@ public class UnsafeWriter {
             buffer.putLong(sortedBuffer.getLong(i));
             buffer.putLong(sortedBuffer.getLong(i + 8));
             headerBuffer.putLong(sortedBuffer.getLong(i + 8));
-            for (int j = i + 16; j < Constants.Message_Size; j++) {
-                buffer.put(sortedBuffer.getByte(j));
+            for (int j = 0; j < Constants.Message_Size - 16; j++) {
+                buffer.put(sortedBuffer.getByte(j + 16));
             }
         }
         buffer.flip();
