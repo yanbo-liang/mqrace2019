@@ -5,6 +5,7 @@ import io.openmessaging.Message;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,13 +13,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class UnsafePut {
     private static int batchSize = 5000000;
     private static UnsafeBuffer unsafeBuffer = new UnsafeBuffer(batchSize * Constants.Message_Size);
+    private static UnsafeBuffer tmp = new UnsafeBuffer(batchSize * Constants.Message_Size);
+
     private static AtomicInteger messageCount = new AtomicInteger(0);
     private static volatile CountDownLatch latch = new CountDownLatch(11);
 
     private static void messageToBuffer(int count, Message message) {
         int startIndex = count * Constants.Message_Size;
         unsafeBuffer.putLong(startIndex, message.getT());
-        unsafeBuffer.putLong(startIndex + 8, message.getT());
+        unsafeBuffer.putLong(startIndex + 8, message.getA());
         unsafeBuffer.put(startIndex + 16, message.getBody());
     }
 
@@ -32,8 +35,9 @@ public class UnsafePut {
                 messageToBuffer(count, message);
 
                 latch.await(1, TimeUnit.SECONDS);
-                unsafeBuffer.free();
-                unsafeBuffer = new UnsafeBuffer(batchSize * Constants.Message_Size);
+
+                UnsafeBuffer.copy(unsafeBuffer,tmp);
+                System.out.println(tmp.getLong(0));
                 messageCount.getAndUpdate(x -> 0);
                 synchronized (latch) {
                     latch.notifyAll();
