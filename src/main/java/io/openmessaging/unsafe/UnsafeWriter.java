@@ -31,7 +31,6 @@ public class UnsafeWriter {
                     } else {
                         UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     }
-                    System.out.println(bufferLimit);
                     UnsafeSort.countSort(unsortedBuffer, sortedBuffer, bufferLimit);
 
 
