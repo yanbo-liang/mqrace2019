@@ -84,9 +84,9 @@ public class UnsafeWriterJob implements Runnable {
         for (int i = start; i < limit; i += Constants.Message_Size) {
             long t = sortedBuffer.getLong(i);
             PartitionIndex.buildIndex(t);
-//            long a = sortedBuffer.getLong(i + 8);
-//            messageBuffer.putLong(a);
-//            headerBuffer.putLong(a);
+            long a = sortedBuffer.getLong(i + 8);
+            messageBuffer.putLong(a);
+            headerBuffer.putLong(a);
 //            for (int j = 0; j < Constants.Message_Size - 16; j++) {
 //                messageBuffer.put(sortedBuffer.getByte(i + 16 + j));
 //            }

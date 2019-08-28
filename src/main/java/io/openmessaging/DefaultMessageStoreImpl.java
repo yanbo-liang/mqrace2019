@@ -31,6 +31,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
             System.out.println(System.currentTimeMillis() - initStart);
+            System.exit(1);
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {
