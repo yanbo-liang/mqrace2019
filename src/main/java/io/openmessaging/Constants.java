@@ -14,7 +14,7 @@ public class Constants {
     public static String Message_Path = "/alidata1/race2019/data/message";
     public static String A_Path = "/alidata1/race2019/data/header";
 
-    public static int Message_Batch_Size = 5000000;
+    public static int Message_Batch_Size = 4000000;
     public static int Message_Buffer_Size = Message_Batch_Size * Message_Size;
 
     static long Direct_Memory_Size = 2L * 1024 * 1024 * 1024;

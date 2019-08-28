@@ -58,9 +58,6 @@ public class PartitionIndex {
     }
 
     public static long getAEnd(long tMax) {
-        if (tMax > 50000000) {
-            System.out.println();
-        }
         PartitionInfo partitionInfo = partitionMap.floorEntry(tMax / partitionSize).getValue();
         long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), partitionInfo.cStart);
         int i = 0;
