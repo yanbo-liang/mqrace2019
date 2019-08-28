@@ -51,7 +51,7 @@ public class MessageReader {
 
 //            buffer.wait();
 //        }
-        System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
+//        System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
     }
 
     private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
