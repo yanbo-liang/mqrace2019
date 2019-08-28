@@ -35,6 +35,9 @@ public class UnsafeWriterJob implements Runnable {
                     ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
 //                    UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     isFirst = false;
+                    synchronized (UnsafeWriter.class) {
+                        UnsafeWriter.class.notify();
+                    }
                     continue;
                 } else {
                     if (isEnd) {
