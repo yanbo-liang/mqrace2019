@@ -16,45 +16,41 @@ public class UnsafePut {
 
     private static int batchCount = 0;
 
-    public static void put(Message message) {
-        try {
-            int count = messageCount.getAndIncrement();
-            if (count < Constants.Message_Batch_Size - 1) {
-                putMessage(count, message);
-            } else if (count == Constants.Message_Batch_Size - 1) {
-                putMessage(count, message);
+    public static void put(Message message) throws Exception {
+        int count = messageCount.getAndIncrement();
+        if (count < Constants.Message_Batch_Size - 1) {
+            putMessage(count, message);
+        } else if (count == Constants.Message_Batch_Size - 1) {
+            putMessage(count, message);
 
-                if (latch.await(1, TimeUnit.SECONDS)) {
-                    System.out.println(++batchCount);
-                    unsafeBuffer.setLimit((count + 1) * Constants.Message_Size);
-                    UnsafeWriter.write(unsafeBuffer);
-                } else {
-                    System.out.println(++batchCount);
-                    unsafeBuffer.setLimit((count + 1) * Constants.Message_Size);
-                    UnsafeWriter.write(unsafeBuffer);
-                }
+            latch.await(1, TimeUnit.SECONDS);
+            System.out.println(++batchCount);
+            unsafeBuffer.setLimit(Constants.Message_Buffer_Size);
+            UnsafeWriter.writeToQueue(unsafeBuffer);
 
-                if (batchCount % 2 == 1) {
-                    unsafeBuffer = unsafeBuffer2;
-                } else {
-                    unsafeBuffer = unsafeBuffer1;
-                }
-                messageCount.getAndUpdate(x -> 0);
-                synchronized (latch) {
-                    latch.notifyAll();
-                    latch = new CountDownLatch(11);
-                }
-            } else if (count > Constants.Message_Batch_Size - 1) {
-                synchronized (latch) {
-                    latch.countDown();
-                    latch.wait();
-                }
-                count = messageCount.getAndIncrement();
-                putMessage(count, message);
+            if (batchCount % 2 == 1) {
+                unsafeBuffer = unsafeBuffer2;
+            } else {
+                unsafeBuffer = unsafeBuffer1;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            messageCount.getAndUpdate(x -> 0);
+            synchronized (latch) {
+                latch.notifyAll();
+                latch = new CountDownLatch(11);
+            }
+        } else if (count > Constants.Message_Batch_Size - 1) {
+            synchronized (latch) {
+                latch.countDown();
+                latch.wait();
+            }
+            count = messageCount.getAndIncrement();
+            putMessage(count, message);
         }
+    }
+
+    public static void putEnd() throws Exception {
+        unsafeBuffer.setLimit(messageCount.get() * Constants.Message_Size);
+        UnsafeWriter.writeToQueueEnd(unsafeBuffer);
     }
 
     private static void putMessage(int count, Message message) {
