@@ -14,15 +14,20 @@ public class DefaultMessageStoreImpl extends MessageStore {
     public DefaultMessageStoreImpl() {
         initStart = System.currentTimeMillis();
     }
-
+int a=0;
     @Override
     void put(Message message) {
-        try {
-            UnsafePut.put(message);
-        } catch (Exception e) {
-            e.printStackTrace();
+        System.out.println(message.getT() + "\t" + message.getA());
+        a++;
+        if (a>500000){
             System.exit(1);
         }
+//        try {
+//            UnsafePut.put(message);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.exit(1);
+//        }
     }
 
     @Override
