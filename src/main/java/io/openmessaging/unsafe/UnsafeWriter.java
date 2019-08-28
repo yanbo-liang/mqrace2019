@@ -35,6 +35,9 @@ public class UnsafeWriter {
         boolean offer = blockingQueue.offer(new UnsafeWriterTask(buffer,false), 5, TimeUnit.SECONDS);
         if (!offer) {
             System.exit(1);
+            synchronized (UnsafeWriter.class){
+                UnsafeWriter.class.wait();
+            }
         }
     }
 
