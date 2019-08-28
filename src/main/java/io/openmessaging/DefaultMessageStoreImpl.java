@@ -52,10 +52,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
             ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             MessageReader.read(buffer, tMin, tMax);
             buffer.flip();
+            long[] tArray = PartitionIndex.getTArray(tMin, tMax);
+            int index = 0;
             List<Message> messageList = new ArrayList<>();
             while (buffer.hasRemaining()) {
                 int dataSize = Constants.Message_Size - 16;
-                long t = buffer.getLong();
+                long t = tArray[index++];
                 long a = buffer.getLong();
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                     byte[] b = new byte[dataSize];

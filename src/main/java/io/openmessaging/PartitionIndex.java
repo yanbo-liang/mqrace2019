@@ -1,9 +1,7 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
 
 public class PartitionIndex {
     private static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
@@ -60,7 +58,7 @@ public class PartitionIndex {
     }
 
     public static long getAEnd(long tMax) {
-        if (tMax>50000000){
+        if (tMax > 50000000) {
             System.out.println();
         }
         PartitionInfo partitionInfo = partitionMap.floorEntry(tMax / partitionSize).getValue();
@@ -72,6 +70,22 @@ public class PartitionIndex {
             }
         }
         return (partitionInfo.mEnd / Constants.Message_Size - i) * 8;
+    }
+
+    public static long[] getTArray(long tMin, long tMax) {
+        NavigableMap<Long, PartitionInfo> subMap = partitionMap.subMap(tMin / partitionSize, true, tMax / partitionSize, true);
+        int count = 0;
+        for (PartitionInfo info : subMap.values()) {
+            count += (info.mEnd - info.mStart) / Constants.Message_Size;
+        }
+        long[] tArray = new long[count];
+        int index = 0;
+        for (PartitionInfo info : subMap.values()) {
+            long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), info.cStart);
+            System.arraycopy(uncompressed, 0, tArray, index, uncompressed.length);
+            index += uncompressed.length;
+        }
+        return tArray;
     }
 
     public static class PartitionInfo {
