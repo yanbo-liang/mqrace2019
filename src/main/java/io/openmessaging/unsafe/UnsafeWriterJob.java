@@ -80,21 +80,18 @@ public class UnsafeWriterJob implements Runnable {
         ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
         System.out.println("borrow time " + (System.currentTimeMillis() - startTime));
 
-        int tt= 0;
         startTime = System.currentTimeMillis();
         for (int i = start; i < limit; i += Constants.Message_Size) {
             long t = sortedBuffer.getLong(i);
             long a = sortedBuffer.getLong(i + 8);
             messageBuffer.putLong(t);
             PartitionIndex.buildIndex(t);
-            tt+=1;
             messageBuffer.putLong(a);
             headerBuffer.putLong(a);
             for (int j = 0; j < Constants.Message_Size - 16; j++) {
                 messageBuffer.put(sortedBuffer.getByte(i + 16 + j));
             }
         }
-        System.out.println("!!!!!!index time " + tt);
 
         messageBuffer.flip();
         headerBuffer.flip();
