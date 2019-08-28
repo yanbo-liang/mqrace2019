@@ -33,7 +33,7 @@ public class PartitionIndex {
 //        System.out.println("totalByteCompressed "+ totalByteCompressed);
     }
 
-    public static long getMessageStart(long tMin) {
+    public static long getMessageStart(long tMin){
         Map.Entry<Long, PartitionInfo> longPartitionInfoEntry = partitionMap.ceilingEntry(tMin / partitionSize);
         if (longPartitionInfoEntry == null) {
             System.out.println();

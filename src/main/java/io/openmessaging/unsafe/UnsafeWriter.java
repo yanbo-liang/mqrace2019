@@ -36,8 +36,8 @@ public class UnsafeWriter {
         if (!offer) {
             System.exit(1);
         }
-        synchronized (UnsafeWriter.class){
-            UnsafeWriter.class.wait();
+        synchronized (UnsafeWriterJob.class){
+            UnsafeWriterJob.class.wait();
         }
     }
 
