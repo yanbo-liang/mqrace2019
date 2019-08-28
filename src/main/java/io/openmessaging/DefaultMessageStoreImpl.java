@@ -4,6 +4,7 @@ import io.openmessaging.unsafe.UnsafePut;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,6 +53,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long start = System.currentTimeMillis();
 //            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             ByteBuffer buffer = MessageReader.read(null, tMin, tMax);
+            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer)buffer;
+            mappedByteBuffer.force();
 //            buffer.flip();
             long[] tArray = PartitionIndex.getTArray(tMin, tMax);
             int index = 0;
@@ -88,6 +91,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
 //            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
+            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer)buffer;
+            mappedByteBuffer.force();
 //            buffer.flip();
             while (buffer.hasRemaining()) {
                 long a = buffer.getLong();
