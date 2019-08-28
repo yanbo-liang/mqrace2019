@@ -20,7 +20,7 @@ public class MessageReader {
 //        }
     }
 
-    public static void read(ByteBuffer buffer, long tMin, long tMax) throws Exception {
+    public static ByteBuffer read(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         FileChannel fileChannel = messageChannel.get();
         if (fileChannel == null) {
             fileChannel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.READ);
@@ -28,10 +28,10 @@ public class MessageReader {
         }
         long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 42;
         long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 42;
-        asyncRead(buffer, fileChannel, messageStart, messageEnd - messageStart);
+        return asyncRead(buffer, fileChannel, messageStart, messageEnd - messageStart);
     }
 
-    public static void fastRead(ByteBuffer buffer, long tMin, long tMax) throws Exception {
+    public static ByteBuffer fastRead(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         FileChannel fileChannel = aChannel.get();
         if (fileChannel == null) {
             fileChannel = FileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
@@ -39,19 +39,20 @@ public class MessageReader {
         }
         long aStart = PartitionIndex.getAStart(tMin);
         long aEnd = PartitionIndex.getAEnd(tMax);
-        asyncRead(buffer, fileChannel, aStart, aEnd - aStart);
+       return asyncRead(buffer, fileChannel, aStart, aEnd - aStart);
     }
 
-    private static void asyncRead(ByteBuffer buffer, FileChannel channel, long start, long length) throws Exception {
+    private static ByteBuffer asyncRead(ByteBuffer buffer, FileChannel channel, long start, long length) throws Exception {
         long readStart = System.currentTimeMillis();
 //        synchronized (buffer) {
-        buffer.limit((int) length);
+//        buffer.limit((int) length);
 //            channel.read(buffer, start, buffer, new WriteCompletionHandler());
-        channel.read(buffer, start);
-
+//        channel.read(buffer, start);
 //            buffer.wait();
 //        }
         System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
+        return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
+
     }
 
     private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {

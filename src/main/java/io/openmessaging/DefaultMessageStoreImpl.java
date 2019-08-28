@@ -1,6 +1,7 @@
 package io.openmessaging;
 
 import io.openmessaging.unsafe.UnsafePut;
+import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -14,20 +15,15 @@ public class DefaultMessageStoreImpl extends MessageStore {
     public DefaultMessageStoreImpl() {
         initStart = System.currentTimeMillis();
     }
-int a=0;
+
     @Override
     void put(Message message) {
-        System.out.println(message.getT() + "\t" + message.getA());
-        a++;
-        if (a>500000){
+        try {
+            UnsafePut.put(message);
+        } catch (Exception e) {
+            e.printStackTrace();
             System.exit(1);
         }
-//        try {
-//            UnsafePut.put(message);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            System.exit(1);
-//        }
     }
 
     @Override
@@ -54,9 +50,9 @@ int a=0;
                 }
             }
             long start = System.currentTimeMillis();
-            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-            MessageReader.read(buffer, tMin, tMax);
-            buffer.flip();
+//            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+            ByteBuffer buffer = MessageReader.read(null, tMin, tMax);
+//            buffer.flip();
             long[] tArray = PartitionIndex.getTArray(tMin, tMax);
             int index = 0;
             List<Message> messageList = new ArrayList<>();
@@ -72,7 +68,9 @@ int a=0;
                     buffer.position(buffer.position() + dataSize);
                 }
             }
-            DirectBufferManager.returnBuffer(buffer);
+//            DirectBufferManager.returnBuffer(buffer);
+            ((DirectBuffer) buffer).cleaner().clean();
+
             System.out.println("gt:\t" + (System.currentTimeMillis() - start));
             return messageList;
         } catch (Exception e) {
@@ -88,9 +86,9 @@ int a=0;
             long start = System.currentTimeMillis();
             long sum = 0, count = 0;
 
-            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
-            MessageReader.fastRead(buffer, tMin, tMax);
-            buffer.flip();
+//            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+            ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
+//            buffer.flip();
             while (buffer.hasRemaining()) {
                 long a = buffer.getLong();
                 if (aMin <= a && a <= aMax) {
@@ -98,7 +96,9 @@ int a=0;
                     count += 1;
                 }
             }
-            DirectBufferManager.returnBuffer(buffer);
+//            DirectBufferManager.returnBuffer(buffer);
+            ((DirectBuffer) buffer).cleaner().clean();
+
             System.out.println("average:" + (System.currentTimeMillis() - start));
             return count == 0 ? 0 : sum / count;
 
