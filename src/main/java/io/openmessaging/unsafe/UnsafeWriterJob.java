@@ -1,5 +1,6 @@
 package io.openmessaging.unsafe;
 
+import io.openmessaging.ConcurrentMemoryCopy;
 import io.openmessaging.Constants;
 import io.openmessaging.DirectBufferManager;
 import io.openmessaging.PartitionIndex;
@@ -31,15 +32,19 @@ public class UnsafeWriterJob implements Runnable {
                 sortedBufferLimit += buffer.getLimit();
 
                 if (isFirst) {
-                    UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+                    ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+//                    UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     isFirst = false;
                     continue;
                 } else {
                     if (isEnd) {
-                        UnsafeBuffer.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
-                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+                        ConcurrentMemoryCopy.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
+                        ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+//                        UnsafeBuffer.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
+//                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     } else {
-                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
+                        ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
+//                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
                     }
                 }
                 System.out.println("copy time: " + (System.currentTimeMillis() - totalStart));
@@ -88,9 +93,9 @@ public class UnsafeWriterJob implements Runnable {
             long a = sortedBuffer.getLong(i + 8);
             messageBuffer.putLong(a);
             headerBuffer.putLong(a);
-//            for (int j = 0; j < Constants.Message_Size - 16; j++) {
-//                messageBuffer.put(sortedBuffer.getByte(i + 16 + j));
-//            }
+            for (int j = 0; j < Constants.Message_Size - 16; j++) {
+                messageBuffer.put(sortedBuffer.getByte(i + 16 + j));
+            }
         }
 
         messageBuffer.flip();
