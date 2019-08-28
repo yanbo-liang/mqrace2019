@@ -44,7 +44,7 @@ public class UnsafeBuffer {
         UnsafeWrapper.getUnsafe().freeMemory(address);
     }
 
-    static void copy(UnsafeBuffer buffer1, int start1, UnsafeBuffer buffer2, int start2, int length) {
+    public static void copy(UnsafeBuffer buffer1, int start1, UnsafeBuffer buffer2, int start2, int length) {
         UnsafeWrapper.getUnsafe().copyMemory(buffer1.address + start1, buffer2.address + start2, length);
     }
 
