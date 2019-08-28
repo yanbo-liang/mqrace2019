@@ -46,6 +46,7 @@ public class UnsafeWriter {
         synchronized (UnsafeWriter.class) {
             UnsafeWriter.class.wait();
         }
+        executorService.shutdown();
     }
 
     static void asyncWrite(ByteBuffer messageBuffer, ByteBuffer headerBuffer) {

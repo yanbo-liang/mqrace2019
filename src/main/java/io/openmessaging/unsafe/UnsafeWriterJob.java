@@ -53,6 +53,7 @@ public class UnsafeWriterJob implements Runnable {
                 if (isEnd) {
                     processBatch(Constants.Message_Buffer_Size, sortedBufferLimit, true);
                     PartitionIndex.flushIndex();
+                    DirectBufferManager.changeToRead();
                 }
                 System.out.println("batch time: " + (System.currentTimeMillis() - start));
 
