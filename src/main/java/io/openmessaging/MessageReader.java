@@ -26,8 +26,8 @@ public class MessageReader {
             fileChannel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.READ);
             messageChannel.set(fileChannel);
         }
-        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 42;
-        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 42;
+        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Message_No_T_Size;
+        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * Constants.Message_No_T_Size;
         return asyncRead(buffer, fileChannel, messageStart, messageEnd - messageStart);
     }
 
@@ -39,7 +39,7 @@ public class MessageReader {
         }
         long aStart = PartitionIndex.getAStart(tMin);
         long aEnd = PartitionIndex.getAEnd(tMax);
-       return asyncRead(buffer, fileChannel, aStart, aEnd - aStart);
+        return asyncRead(buffer, fileChannel, aStart, aEnd - aStart);
     }
 
     private static ByteBuffer asyncRead(ByteBuffer buffer, FileChannel channel, long start, long length) throws Exception {
