@@ -52,6 +52,7 @@ public class UnsafeWriterJob implements Runnable {
                 processBatch(0, Constants.Message_Buffer_Size, false);
                 if (isEnd) {
                     processBatch(Constants.Message_Buffer_Size, sortedBufferLimit, true);
+                    PartitionIndex.flushIndex();
                 }
                 System.out.println("batch time: " + (System.currentTimeMillis() - start));
 
@@ -78,20 +79,25 @@ public class UnsafeWriterJob implements Runnable {
         ByteBuffer headerBuffer = DirectBufferManager.borrowHeaderBuffer();
         System.out.println("borrow time " + (System.currentTimeMillis() - startTime));
 
+        int tt= 0;
         startTime = System.currentTimeMillis();
         for (int i = start; i < limit; i += Constants.Message_Size) {
-            messageBuffer.putLong(sortedBuffer.getLong(i));
-            messageBuffer.putLong(sortedBuffer.getLong(i + 8));
-            headerBuffer.putLong(sortedBuffer.getLong(i + 8));
+            long t = sortedBuffer.getLong(i);
+            long a = sortedBuffer.getLong(i + 8);
+            messageBuffer.putLong(t);
+            PartitionIndex.buildIndex(t);
+            tt+=1;
+            messageBuffer.putLong(a);
+            headerBuffer.putLong(a);
             for (int j = 0; j < Constants.Message_Size - 16; j++) {
                 messageBuffer.put(sortedBuffer.getByte(i + 16 + j));
             }
         }
+        System.out.println("!!!!!!index time " + tt);
+
         messageBuffer.flip();
         headerBuffer.flip();
         System.out.println("fill time " + (System.currentTimeMillis() - startTime));
-
-//        PartitionIndex.buildIndex(sortedMessageBuffer, count, count);
 
         UnsafeWriter.asyncWrite(messageBuffer, headerBuffer);
         if (waitComplete) {

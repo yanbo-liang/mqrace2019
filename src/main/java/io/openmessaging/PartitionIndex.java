@@ -1,6 +1,7 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -12,7 +13,7 @@ public class PartitionIndex {
     private static int totalByteCompressed = 0;
     private static ByteBuffer tBuffer = ByteBuffer.allocate((int) partitionSize * 100 * 8);
 
-    public synchronized static void flushIndex() {
+    public static void flushIndex() {
         if (startPosition != totalByteIndexed) {
             tBuffer.flip();
             int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalByteCompressed);
@@ -23,25 +24,23 @@ public class PartitionIndex {
         }
     }
 
-    public synchronized static void buildIndex(long[] messageBuffer, int count, int length) {
-        for (int i = 0; i < length; i++) {
-            int messageIndex = count - 1 - i;
-            int longIndex = messageIndex * Constants.Message_Size;
-            long t = messageBuffer[longIndex];
-            if (!(tMin <= t && t <= tMax)) {
-                flushIndex();
-                tMin = (t / partitionSize) * partitionSize;
-                tMax = tMin + partitionSize - 1;
-            }
-            tBuffer.putLong(t);
-            totalByteIndexed += Constants.Message_Size;
-//            i += Constants.Message_Size;
+    public static void buildIndex(long t) {
+        if (!(tMin <= t && t <= tMax)) {
+            flushIndex();
+            tMin = (t / partitionSize) * partitionSize;
+            tMax = tMin + partitionSize - 1;
         }
-        System.out.println("totalByteCompressed "+ totalByteCompressed);
+        tBuffer.putLong(t);
+        totalByteIndexed += Constants.Message_Size;
+//        System.out.println("totalByteCompressed "+ totalByteCompressed);
     }
 
     public static long getMessageStart(long tMin) {
-        return partitionMap.ceilingEntry(tMin / partitionSize).getValue().mStart;
+        Map.Entry<Long, PartitionInfo> longPartitionInfoEntry = partitionMap.ceilingEntry(tMin / partitionSize);
+        if (longPartitionInfoEntry == null) {
+            System.out.println();
+        }
+        return longPartitionInfoEntry.getValue().mStart;
     }
 
     public static long getMessageEnd(long tMax) {
@@ -61,6 +60,9 @@ public class PartitionIndex {
     }
 
     public static long getAEnd(long tMax) {
+        if (tMax>50000000){
+            System.out.println();
+        }
         PartitionInfo partitionInfo = partitionMap.floorEntry(tMax / partitionSize).getValue();
         long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), partitionInfo.cStart);
         int i = 0;
