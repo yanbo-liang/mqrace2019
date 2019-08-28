@@ -32,19 +32,19 @@ public class UnsafeWriterJob implements Runnable {
                 sortedBufferLimit += buffer.getLimit();
 
                 if (isFirst) {
-//                    ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
-                    UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+                    ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+//                    UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     isFirst = false;
                     continue;
                 } else {
                     if (isEnd) {
-//                        ConcurrentMemoryCopy.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
-//                        ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
-                        UnsafeBuffer.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
-                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+                        ConcurrentMemoryCopy.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
+                        ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
+//                        UnsafeBuffer.copy(unsortedBuffer, Constants.Message_Buffer_Size, unsortedBuffer, 0, Constants.Message_Buffer_Size);
+//                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     } else {
-//                        ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
-                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
+                        ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
+//                        UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
                     }
                 }
                 System.out.println("copy time: " + (System.currentTimeMillis() - totalStart));
