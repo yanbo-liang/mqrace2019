@@ -26,8 +26,8 @@ public class MessageReader {
             fileChannel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.READ);
             messageChannel.set(fileChannel);
         }
-        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 16;
-        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 16;
+        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 42;
+        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 42;
         return asyncRead(buffer, fileChannel, messageStart, messageEnd - messageStart);
     }
 
