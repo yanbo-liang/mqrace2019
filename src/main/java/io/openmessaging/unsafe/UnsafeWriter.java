@@ -36,9 +36,9 @@ public class UnsafeWriter {
         if (!offer) {
             System.exit(1);
         }
-        synchronized (UnsafeWriterJob.class){
-            UnsafeWriterJob.class.wait();
-        }
+//        synchronized (UnsafeWriterJob.class){
+//            UnsafeWriterJob.class.wait();
+//        }
     }
 
     static void writeToQueueEnd(UnsafeBuffer buffer) throws Exception {

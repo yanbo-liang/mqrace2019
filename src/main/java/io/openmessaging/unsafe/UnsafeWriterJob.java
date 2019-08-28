@@ -35,9 +35,9 @@ public class UnsafeWriterJob implements Runnable {
                     ConcurrentMemoryCopy.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
 //                    UnsafeBuffer.copy(buffer, 0, unsortedBuffer, Constants.Message_Buffer_Size, buffer.getLimit());
                     isFirst = false;
-                    synchronized (UnsafeWriterJob.class) {
-                        UnsafeWriterJob.class.notify();
-                    }
+//                    synchronized (UnsafeWriterJob.class) {
+//                        UnsafeWriterJob.class.notify();
+//                    }
                     continue;
                 } else {
                     if (isEnd) {
@@ -51,9 +51,9 @@ public class UnsafeWriterJob implements Runnable {
                     }
                 }
                 System.out.println("copy time: " + (System.currentTimeMillis() - totalStart));
-                synchronized (UnsafeWriterJob.class) {
-                    UnsafeWriterJob.class.notify();
-                }
+//                synchronized (UnsafeWriterJob.class) {
+//                    UnsafeWriterJob.class.notify();
+//                }
                 long start = System.currentTimeMillis();
                 UnsafeSort.countSort(unsortedBuffer, sortedBuffer, sortedBufferLimit);
                 System.out.println("sort time: " + (System.currentTimeMillis() - start));
