@@ -21,8 +21,8 @@ public class MessageReader {
     }
 
     public static void read(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size*16;
-        long messageEnd = PartitionIndex.getMessageEnd(tMax)/ Constants.Message_Size*16;
+        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size*42;
+        long messageEnd = PartitionIndex.getMessageEnd(tMax)/ Constants.Message_Size*42;
         asyncRead(buffer, messageChannel, messageStart, messageEnd - messageStart);
     }
 
