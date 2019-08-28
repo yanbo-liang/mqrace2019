@@ -28,8 +28,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
-//            System.out.println(System.currentTimeMillis() - initStart);
-//            System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
+            System.out.println(System.currentTimeMillis() - initStart);
+            System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {
                     UnsafePut.putEnd();
@@ -68,7 +68,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
             DirectBufferManager.returnBuffer(buffer);
-//            System.out.println("gt:\t" + (System.currentTimeMillis() - start));
+            System.out.println("gt:\t" + (System.currentTimeMillis() - start));
             return messageList;
         } catch (Exception e) {
             e.printStackTrace();
@@ -79,9 +79,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         try {
-//            System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
+            System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
             long start = System.currentTimeMillis();
             long sum = 0, count = 0;
+
             ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             MessageReader.fastRead(buffer, tMin, tMax);
             buffer.flip();
@@ -93,7 +94,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
             DirectBufferManager.returnBuffer(buffer);
-//            System.out.println("average:" + (System.currentTimeMillis() - start));
+            System.out.println("average:" + (System.currentTimeMillis() - start));
             return count == 0 ? 0 : sum / count;
 
         } catch (Exception e) {
