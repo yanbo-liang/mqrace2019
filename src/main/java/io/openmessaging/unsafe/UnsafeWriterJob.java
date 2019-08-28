@@ -42,6 +42,7 @@ public class UnsafeWriterJob implements Runnable {
                         UnsafeBuffer.copy(buffer, 0, unsortedBuffer, 0, buffer.getLimit());
                     }
                 }
+                System.out.println("copy time: " + (System.currentTimeMillis() - totalStart));
 
                 long start = System.currentTimeMillis();
                 UnsafeSort.countSort(unsortedBuffer, sortedBuffer, sortedBufferLimit);
