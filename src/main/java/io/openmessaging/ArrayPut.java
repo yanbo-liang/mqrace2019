@@ -40,7 +40,7 @@ public class ArrayPut {
             }
         }
         buffer.putLong(message.getT());
-        buffer.putLong(message.getA());
-        buffer.put(message.getBody());
+//        buffer.putLong(message.getA());
+//        buffer.put(message.getBody());
     }
 }
