@@ -26,9 +26,7 @@ public class UnsafePut {
             latch.await(1, TimeUnit.SECONDS);
             System.out.println(++batchCount);
             unsafeBuffer.setLimit(Constants.Message_Buffer_Size);
-            long start=System.currentTimeMillis();
             UnsafeWriter.writeToQueue(unsafeBuffer);
-            System.out.println("write waited: "+(System.currentTimeMillis()-start));
             if (batchCount % 2 == 1) {
                 unsafeBuffer = unsafeBuffer2;
             } else {

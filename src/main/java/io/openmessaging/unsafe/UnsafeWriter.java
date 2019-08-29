@@ -32,17 +32,21 @@ public class UnsafeWriter {
     }
 
     static void writeToQueue(UnsafeBuffer buffer) throws Exception {
-        boolean offer = blockingQueue.offer(new UnsafeWriterTask(buffer,false), 5, TimeUnit.SECONDS);
+        boolean offer = blockingQueue.offer(new UnsafeWriterTask(buffer, false), 5, TimeUnit.SECONDS);
         if (!offer) {
             System.exit(1);
         }
-        synchronized (UnsafeWriterJob.class){
+
+        long start = System.currentTimeMillis();
+        synchronized (UnsafeWriterJob.class) {
             UnsafeWriterJob.class.wait();
         }
+        System.out.println("copy waited: " + (System.currentTimeMillis() - start));
+
     }
 
     static void writeToQueueEnd(UnsafeBuffer buffer) throws Exception {
-        boolean offer = blockingQueue.offer(new UnsafeWriterTask(buffer,true), 5, TimeUnit.SECONDS);
+        boolean offer = blockingQueue.offer(new UnsafeWriterTask(buffer, true), 5, TimeUnit.SECONDS);
         if (!offer) {
             System.exit(1);
         }
