@@ -1,6 +1,7 @@
 package io.openmessaging;
 
 import io.openmessaging.unsafe.UnsafePut;
+import io.openmessaging.unsorted.UnsortedPut;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
@@ -21,7 +22,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     void put(Message message) {
         try {
 //            UnsafePut.put(message);
-            ArrayPut.put(message);
+            UnsortedPut.put(message);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);

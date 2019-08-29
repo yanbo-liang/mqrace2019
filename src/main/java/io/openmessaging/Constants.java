@@ -17,9 +17,9 @@ public class Constants {
     public static int Message_Batch_Size = 5000000;
     public static int Message_Buffer_Size = Message_Batch_Size * Message_Size;
 
-    static long Direct_Memory_Size = 2L * 1024 * 1024 * 1024;
-    static long Compressed_Buffer_Size = 500 * 1024 * 1024;
-    static long Write_Message_Buffer_Size = (Message_Size - 8) * Message_Batch_Size;
-    static long Write_Header_Buffer_Size = 8 * Message_Batch_Size;
-    static long Read_Buffer_Size = 20L * 1024 * 1024;
+    public static long Direct_Memory_Size = 2L * 1024 * 1024 * 1024;
+    public static long Compressed_Buffer_Size = 500 * 1024 * 1024;
+    public static long Write_Message_Buffer_Size = (Message_Size - 8) * Message_Batch_Size;
+    public static long Write_Header_Buffer_Size = 8 * Message_Batch_Size;
+    public static long Read_Buffer_Size = 20L * 1024 * 1024;
 }
