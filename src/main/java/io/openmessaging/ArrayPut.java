@@ -2,6 +2,7 @@ package io.openmessaging;
 
 import io.openmessaging.unsafe.UnsafeBuffer;
 import io.openmessaging.unsafe.UnsafeWriter;
+import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -11,14 +12,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ArrayPut {
-    private static ByteBuffer buffer = ByteBuffer.allocateDirect(100 * 1000 * Constants.Message_Size);
+    private static UnsafeBuffer buffer=new UnsafeBuffer(8);
     private static long min = 0;
     private static long max = 0;
     private static AtomicBoolean init = new AtomicBoolean(false);
     private static CyclicBarrier barrier = new CyclicBarrier(Constants.Thread_Count, () -> {
         min += 1000;
         max += 1000;
-        buffer.clear();
     });
 
     public static void put(Message message) throws Exception {
@@ -39,7 +39,7 @@ public class ArrayPut {
                 break;
             }
         }
-        buffer.putLong(message.getT());
+        buffer.putLong(0,message.getA());
 //        buffer.putLong(message.getA());
 //        buffer.put(message.getBody());
     }
