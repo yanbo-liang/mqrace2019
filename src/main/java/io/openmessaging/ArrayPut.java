@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ArrayPut {
-    private static UnsafeBuffer buffer=new UnsafeBuffer(8);
+    private static UnsafeBuffer buffer=new UnsafeBuffer(20000);
     private static long min = 0;
     private static long max = 0;
     private static AtomicBoolean init = new AtomicBoolean(false);
@@ -33,14 +33,14 @@ public class ArrayPut {
         }
         while (!(min <= message.getT() && message.getT() <= max)) {
             try {
-                barrier.await(2, TimeUnit.SECONDS);
+                barrier.await(3, TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
             }
         }
         buffer.putLong(0,message.getA());
-//        buffer.putLong(message.getA());
-//        buffer.put(message.getBody());
+        buffer.putLong(0,message.getT());
+        buffer.put(0,message.getBody());
     }
 }
