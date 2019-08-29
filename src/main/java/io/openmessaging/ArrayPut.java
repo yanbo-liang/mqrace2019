@@ -33,7 +33,7 @@ public class ArrayPut {
         }
         while (!(min <= message.getT() && message.getT() <= max)) {
             try {
-                barrier.await(1, TimeUnit.SECONDS);
+                barrier.await(2, TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
