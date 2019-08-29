@@ -3,44 +3,64 @@ package io.openmessaging;
 import io.openmessaging.unsafe.UnsafeBuffer;
 import io.openmessaging.unsafe.UnsafeWriter;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
+import java.util.Queue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ArrayPut {
-    private static ByteBuffer buffer = ByteBuffer.allocateDirect(100 * 1000 * Constants.Message_Size);
-    private static long min = 0;
-    private static long max = 0;
-    private static AtomicBoolean init = new AtomicBoolean(false);
-    private static CyclicBarrier barrier = new CyclicBarrier(Constants.Thread_Count, () -> {
-        min += 1000;
-        max += 1000;
-        buffer.clear();
-    });
+
+
+    private static ConcurrentHashMap<Long, BufferWrapper> map = new ConcurrentHashMap<>();
 
     public static void put(Message message) throws Exception {
-        if (!init.get()) {
+        BufferWrapper bufferWrapper = map.get(message.getT() / 1000 * 1000);
+        if (bufferWrapper == null) {
             synchronized (ArrayPut.class) {
-                if (!init.get()) {
-                    init.compareAndSet(false, true);
-                    min = message.getT() / 1000 * 1000;
-                    max = min + 999;
+                bufferWrapper = map.get(message.getT() / 1000 * 1000);
+                if (bufferWrapper == null) {
+                    long s = System.currentTimeMillis();
+                    bufferWrapper = BufferWarpperManager.borrow();
+                    map.put(message.getT() / 1000 * 1000, bufferWrapper);
                 }
             }
         }
-        while (!(min <= message.getT() && message.getT() <= max)) {
-            try {
-                barrier.await(2, TimeUnit.SECONDS);
-            } catch (Exception e) {
-                e.printStackTrace();
-                break;
+        ByteBuffer buffer = bufferWrapper.buffer;
+        buffer.putLong(message.getT());
+         buffer.putLong(message.getA());
+         buffer.put(message.getBody());
+    }
+
+    private static class BufferWrapper {
+        ByteBuffer buffer;
+        long min;
+
+        public BufferWrapper(long min) {
+            buffer = ByteBuffer.allocate(100 * 1000 * Constants.Message_Size);
+            this.min = min;
+        }
+    }
+
+    private static class BufferWarpperManager {
+        private static Queue<BufferWrapper> unused = new ConcurrentLinkedQueue<>();
+        private static Queue<BufferWrapper> used = new ConcurrentLinkedQueue<>();
+
+        static {
+            for (int i = 0; i < 200; i++) {
+                unused.offer(new BufferWrapper(0));
             }
         }
-        buffer.putLong(message.getT());
-        buffer.putLong(message.getA());
-        buffer.put(message.getBody());
+
+        static BufferWrapper borrow() {
+            if (unused.peek() == null) {
+                unused.offer(used.poll());
+            }
+            BufferWrapper poll = unused.poll();
+            used.offer(poll);
+            poll.buffer.clear();
+            return poll;
+        }
     }
 }
