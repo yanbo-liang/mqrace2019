@@ -12,13 +12,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ArrayPut {
-    private static UnsafeBuffer buffer=new UnsafeBuffer(20000);
+    private static UnsafeBuffer buffer = new UnsafeBuffer(2000 * 100 * Constants.Message_Size);
+    private static AtomicInteger count = new AtomicInteger(0);
     private static long min = 0;
     private static long max = 0;
     private static AtomicBoolean init = new AtomicBoolean(false);
     private static CyclicBarrier barrier = new CyclicBarrier(Constants.Thread_Count, () -> {
-        min += 5000;
-        max += 5000;
+        min += 2000;
+        max += 2000;
+        count.set(0);
     });
 
     public static void put(Message message) throws Exception {
@@ -26,8 +28,8 @@ public class ArrayPut {
             synchronized (ArrayPut.class) {
                 if (!init.get()) {
                     init.compareAndSet(false, true);
-                    min = message.getT() / 5000 * 5000;
-                    max = min + 4999;
+                    min = message.getT() / 2000 * 2000;
+                    max = min + 1999;
                 }
             }
         }
@@ -39,8 +41,9 @@ public class ArrayPut {
                 break;
             }
         }
-        buffer.putLong(0,message.getA());
-        buffer.putLong(0,message.getT());
-        buffer.put(0,message.getBody());
+        int index = count.getAndIncrement() * Constants.Message_Size;
+        buffer.putLong(index, message.getT());
+        buffer.putLong(index + 8, message.getA());
+        buffer.put(index + 16, message.getBody());
     }
 }
