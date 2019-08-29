@@ -43,7 +43,6 @@ public class UnsortedPut {
         }
         while (!(min <= message.getT() && message.getT() <= max)) {
             try {
-                System.out.println(0);
                 barrier.await(3, TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();

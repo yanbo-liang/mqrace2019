@@ -11,7 +11,7 @@ import java.util.concurrent.*;
 
 class UnsortedWriter {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private static BlockingQueue<UnsafeBuffer> blockingQueue = new ArrayBlockingQueue<>(100);
+    private static BlockingQueue<UnsafeBuffer> blockingQueue = new ArrayBlockingQueue<>(UnsortedConstants.Buffer_Queue_Size);
     private static AsynchronousFileChannel fileChannel;
     private static long totalByteWritten = 0;
 
