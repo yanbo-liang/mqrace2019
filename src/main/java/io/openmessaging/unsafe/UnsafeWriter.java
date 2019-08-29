@@ -45,6 +45,7 @@ public class UnsafeWriter {
             UnsafeWriterJob.class.wait();
         }
         System.out.println("copy waited: " + (System.currentTimeMillis() - start));
+        Thread.sleep(300);
 
     }
 
