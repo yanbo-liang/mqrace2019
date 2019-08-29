@@ -4,6 +4,7 @@ import io.openmessaging.Constants;
 import io.openmessaging.Message;
 import io.openmessaging.unsafe.UnsafeBuffer;
 import io.openmessaging.unsafe.UnsafeWriter;
+import org.omg.CORBA.TCKind;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +18,12 @@ public class UnsortedPut {
     private static long max = 0;
     private static AtomicBoolean init = new AtomicBoolean(false);
     private static CyclicBarrier barrier = new CyclicBarrier(Constants.Thread_Count, () -> {
+        System.out.println();
+        try {
+Thread.sleep(2000);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         min += UnsortedConstants.Partition_Size;
         max += UnsortedConstants.Partition_Size;
         unsafeBuffer.position(count.get() * Constants.Message_Size);
@@ -38,6 +45,7 @@ public class UnsortedPut {
         }
         while (!(min <= message.getT() && message.getT() <= max)) {
             try {
+                System.out.println(0);
                 barrier.await(3, TimeUnit.SECONDS);
             } catch (Exception e) {
                 e.printStackTrace();
