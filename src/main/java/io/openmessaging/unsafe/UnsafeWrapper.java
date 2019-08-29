@@ -17,7 +17,7 @@ public class UnsafeWrapper {
         }
     }
 
-    static Unsafe getUnsafe() {
+    public static Unsafe getUnsafe() {
         return unsafe;
     }
 }

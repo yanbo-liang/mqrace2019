@@ -7,14 +7,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UnsafePut {
-    private static UnsafeBuffer unsafeBuffer1 = new UnsafeBuffer(Constants.Message_Buffer_Size);
-    private static UnsafeBuffer unsafeBuffer2 = new UnsafeBuffer(Constants.Message_Buffer_Size);
-    private static UnsafeBuffer unsafeBuffer = unsafeBuffer1;
+    private static UnsafeBuffer unsafeBuffer =  new UnsafeBuffer(Constants.Message_Buffer_Size);
 
     private static AtomicInteger messageCount = new AtomicInteger(0);
     private static volatile CountDownLatch latch = new CountDownLatch(Constants.Thread_Count - 1);
-
-    private static int batchCount = 0;
 
     public static void put(Message message) throws Exception {
         int count = messageCount.getAndIncrement();
@@ -24,14 +20,8 @@ public class UnsafePut {
             putMessage(count, message);
 
             latch.await(1, TimeUnit.SECONDS);
-            System.out.println(++batchCount);
             unsafeBuffer.setLimit(Constants.Message_Buffer_Size);
             UnsafeWriter.writeToQueue(unsafeBuffer);
-            if (batchCount % 2 == 1) {
-                unsafeBuffer = unsafeBuffer2;
-            } else {
-                unsafeBuffer = unsafeBuffer1;
-            }
             messageCount.getAndUpdate(x -> 0);
             synchronized (latch) {
                 latch.notifyAll();
