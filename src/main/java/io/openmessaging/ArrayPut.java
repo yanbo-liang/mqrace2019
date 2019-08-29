@@ -17,8 +17,8 @@ public class ArrayPut {
     private static long max = 0;
     private static AtomicBoolean init = new AtomicBoolean(false);
     private static CyclicBarrier barrier = new CyclicBarrier(Constants.Thread_Count, () -> {
-        min += 2000;
-        max += 2000;
+        min += 5000;
+        max += 5000;
     });
 
     public static void put(Message message) throws Exception {
@@ -26,8 +26,8 @@ public class ArrayPut {
             synchronized (ArrayPut.class) {
                 if (!init.get()) {
                     init.compareAndSet(false, true);
-                    min = message.getT() / 2000 * 2000;
-                    max = min + 1999;
+                    min = message.getT() / 5000 * 5000;
+                    max = min + 4999;
                 }
             }
         }
