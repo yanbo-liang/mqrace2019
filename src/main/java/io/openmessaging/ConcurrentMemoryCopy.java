@@ -5,7 +5,7 @@ import io.openmessaging.unsafe.UnsafeBuffer;
 import java.util.concurrent.*;
 
 public class ConcurrentMemoryCopy {
-    private static int threadCount = 8;
+    private static int threadCount = 4;
     private static ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
     private static CountDownLatch latch = new CountDownLatch(threadCount);
 
