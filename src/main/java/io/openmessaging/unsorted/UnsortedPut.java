@@ -21,6 +21,8 @@ public class UnsortedPut {
         if (count.get() * Constants.Message_Size > UnsortedConstants.Buffer_Size) {
             System.out.println("fucker");
             System.exit(1);
+        }else{
+            System.out.println(count.get());
         }
         min += UnsortedConstants.Partition_Size;
         max += UnsortedConstants.Partition_Size;
