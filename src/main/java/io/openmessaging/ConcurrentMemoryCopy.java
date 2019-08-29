@@ -31,7 +31,7 @@ public class ConcurrentMemoryCopy {
         }
     }
 
-    public static synchronized void copy(UnsafeBuffer src, int srcStart, UnsafeBuffer dest, int destStart, int length) throws InterruptedException {
+    public static void copy(UnsafeBuffer src, int srcStart, UnsafeBuffer dest, int destStart, int length) throws InterruptedException {
         int processed = 0;
         int batch = length / threadCount;
         int remaining = length % threadCount;
