@@ -32,12 +32,15 @@ public class UnsafeWriter {
     }
 
     static void writeToQueue(UnsafeBuffer buffer) throws Exception {
+        long start = System.currentTimeMillis();
+
         boolean offer = blockingQueue.offer(new UnsafeWriterTask(buffer, false), 5, TimeUnit.SECONDS);
         if (!offer) {
             System.exit(1);
         }
+        System.out.println("write waited: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
 
-        long start = System.currentTimeMillis();
         synchronized (UnsafeWriterJob.class) {
             UnsafeWriterJob.class.wait();
         }
