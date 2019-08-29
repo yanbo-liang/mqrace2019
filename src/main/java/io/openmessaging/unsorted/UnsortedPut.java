@@ -18,11 +18,9 @@ public class UnsortedPut {
     private static long max = 0;
     private static AtomicBoolean init = new AtomicBoolean(false);
     private static CyclicBarrier barrier = new CyclicBarrier(Constants.Thread_Count, () -> {
-        System.out.println();
-        try {
-Thread.sleep(2000);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (count.get() * Constants.Message_Size > UnsortedConstants.Buffer_Size) {
+            System.out.println("fucker");
+            System.exit(1);
         }
         min += UnsortedConstants.Partition_Size;
         max += UnsortedConstants.Partition_Size;

@@ -45,7 +45,9 @@ public class UnsafeBuffer {
     public void flip() {
         byteBuffer.flip();
     }
-
+    public void clear() {
+        byteBuffer.clear();
+    }
     public long getLong(int index) {
         return UnsafeWrapper.getUnsafe().getLong(address + index);
     }

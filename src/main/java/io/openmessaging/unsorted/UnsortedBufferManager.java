@@ -17,6 +17,7 @@ class UnsortedBufferManager {
     static UnsafeBuffer borrowBuffer() {
         try {
             UnsafeBuffer buffer = queue.take();
+            buffer.clear();
             return buffer;
         } catch (Exception e) {
             e.printStackTrace();
