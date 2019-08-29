@@ -20,7 +20,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     void put(Message message) {
         try {
-            UnsafePut.put(message);
+//            UnsafePut.put(message);
+            ArrayPut.put(message);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
