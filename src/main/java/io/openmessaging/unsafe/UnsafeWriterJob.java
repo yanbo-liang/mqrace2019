@@ -23,7 +23,12 @@ public class UnsafeWriterJob implements Runnable {
     public void run() {
         try {
             while (true) {
+                long jobwait = System.currentTimeMillis();
+
                 UnsafeWriterTask task = blockingQueue.take();
+
+                System.out.println("job wait: " + (System.currentTimeMillis() - jobwait));
+
                 UnsafeBuffer buffer = task.unsafeBuffer;
                 boolean isEnd = task.isEnd;
 
