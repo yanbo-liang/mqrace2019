@@ -16,14 +16,14 @@ public class ArrayPut {
     private static ConcurrentHashMap<Long, BufferWrapper> map = new ConcurrentHashMap<>();
 
     public static void put(Message message) throws Exception {
-        BufferWrapper bufferWrapper = map.get(message.getT() / 1000 * 1000);
+        BufferWrapper bufferWrapper = map.get(message.getT() / 1000 * 10000);
         if (bufferWrapper == null) {
             synchronized (ArrayPut.class) {
-                bufferWrapper = map.get(message.getT() / 1000 * 1000);
+                bufferWrapper = map.get(message.getT() / 1000 * 10000);
                 if (bufferWrapper == null) {
                     long s = System.currentTimeMillis();
                     bufferWrapper = BufferWarpperManager.borrow();
-                    map.put(message.getT() / 1000 * 1000, bufferWrapper);
+                    map.put(message.getT() / 1000 * 10000, bufferWrapper);
                 }
             }
         }
@@ -38,7 +38,7 @@ public class ArrayPut {
         long min;
 
         public BufferWrapper(long min) {
-            buffer = ByteBuffer.allocate(100 * 1000 * Constants.Message_Size);
+            buffer = ByteBuffer.allocate(10 * 10000 * Constants.Message_Size);
             this.min = min;
         }
     }
@@ -53,7 +53,7 @@ public class ArrayPut {
             }
         }
 
-        static BufferWrapper borrow() {
+        static synchronized BufferWrapper borrow() {
             if (unused.peek() == null) {
                 unused.offer(used.poll());
             }
