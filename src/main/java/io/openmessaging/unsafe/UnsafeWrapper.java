@@ -45,4 +45,15 @@ public class UnsafeWrapper {
             e.printStackTrace();
         }
     }
+
+    public static void unsafeCopyA(byte[] src, long srcStart, ByteBuffer dest, long destStart, long length) {
+        try {
+            Field addressField = Buffer.class.getDeclaredField("address");
+            addressField.setAccessible(true);
+            long address = addressField.getLong(dest);
+            unsafe.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcStart * 8, null, address + destStart * 8, length * 8);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

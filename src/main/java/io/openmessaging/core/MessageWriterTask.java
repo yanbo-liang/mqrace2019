@@ -94,7 +94,7 @@ class MessageWriterTask implements Runnable {
         ByteBuffer aBuffer = DirectBufferManager.borrowABuffer();
 
         long[] tArray = sorted.tArray;
-        long[] aArray = sorted.aArray;
+        byte[] aArray = sorted.aArray.array();
         byte[] bodyArray = sorted.bodyArray;
 
         for (int i = start; i < limit; i += 1) {
@@ -103,7 +103,7 @@ class MessageWriterTask implements Runnable {
 
         int length = limit - start;
         UnsafeWrapper.unsafeCopy(bodyArray, start, bodyBuffer, 0, length);
-        UnsafeWrapper.unsafeCopy(aArray, start, aBuffer, 0, length);
+        UnsafeWrapper.unsafeCopyA(aArray, start, aBuffer, 0, length);
 
         bodyBuffer.position(length * Constants.Body_Size);
         aBuffer.position(length * 8);
