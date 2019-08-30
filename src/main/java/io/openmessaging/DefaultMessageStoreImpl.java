@@ -18,20 +18,27 @@ public class DefaultMessageStoreImpl extends MessageStore {
         initStart = System.currentTimeMillis();
     }
 
+    int min = Integer.MAX_VALUE;
+
     @Override
     void put(Message message) {
-        try {
-//            UnsafePut.put(message);
-            UnsortedPut.put(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
+        int a = Long.numberOfLeadingZeros(message.getA());
+        if (a < min) {
+            min = a;
         }
+//        try {
+////            UnsafePut.put(message);
+//            UnsortedPut.put(message);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.exit(1);
+//        }
     }
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
+            System.out.println("leading zero"+min);
             System.out.println("total time");
 
             System.out.println(System.currentTimeMillis() - initStart);
@@ -58,7 +65,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long start = System.currentTimeMillis();
 //            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             ByteBuffer buffer = MessageReader.read(null, tMin, tMax);
-            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer)buffer;
+            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer) buffer;
             mappedByteBuffer.force();
 //            buffer.flip();
             long[] tArray = PartitionIndex.getTArray(tMin, tMax);
@@ -96,7 +103,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
 //            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
             ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
-            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer)buffer;
+            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer) buffer;
             mappedByteBuffer.force();
 //            buffer.flip();
             while (buffer.hasRemaining()) {
