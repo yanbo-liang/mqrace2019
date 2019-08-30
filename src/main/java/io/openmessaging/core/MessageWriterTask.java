@@ -110,6 +110,7 @@ class MessageWriterTask implements Runnable {
 
         bodyBuffer.flip();
         aBuffer.flip();
+
         System.out.println("fill time " + (System.currentTimeMillis() - startTime));
 
         MessageWriter.asyncWrite(bodyBuffer, aBuffer);

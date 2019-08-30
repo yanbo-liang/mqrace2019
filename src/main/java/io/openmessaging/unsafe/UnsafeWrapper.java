@@ -29,7 +29,7 @@ public class UnsafeWrapper {
             Field addressField = Buffer.class.getDeclaredField("address");
             addressField.setAccessible(true);
             long address = addressField.getLong(dest);
-            unsafe.copyMemory(src, Unsafe.ARRAY_LONG_BASE_OFFSET + srcStart * Unsafe.ARRAY_LONG_INDEX_SCALE, null, address + destStart * Unsafe.ARRAY_LONG_INDEX_SCALE, length);
+            unsafe.copyMemory(src, Unsafe.ARRAY_LONG_BASE_OFFSET + srcStart * Unsafe.ARRAY_LONG_INDEX_SCALE, null, address + destStart * Unsafe.ARRAY_LONG_INDEX_SCALE, length * 8);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -40,7 +40,7 @@ public class UnsafeWrapper {
             Field addressField = Buffer.class.getDeclaredField("address");
             addressField.setAccessible(true);
             long address = addressField.getLong(dest);
-            unsafe.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcStart * Constants.Body_Size, null, address + destStart * Constants.Body_Size, length);
+            unsafe.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + srcStart * Constants.Body_Size, null, address + destStart * Constants.Body_Size, length * Constants.Body_Size);
         } catch (Exception e) {
             e.printStackTrace();
         }
