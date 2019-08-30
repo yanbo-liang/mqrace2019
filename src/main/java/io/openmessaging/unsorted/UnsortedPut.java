@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UnsortedPut {
-    private static int totalByteWritten = 0;
+    private static long totalByteWritten = 0;
     private static FileChannel fileChannel;
     private static MappedByteBuffer unsafeBuffer;
     private static AtomicInteger count = new AtomicInteger(0);
