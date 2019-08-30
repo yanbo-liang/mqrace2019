@@ -11,6 +11,7 @@ class MessageSort {
         long[] aSorted = sorted.aArray;
         byte[] bodyUnsorted = unsorted.bodyArray;
         byte[] bodySorted = sorted.bodyArray;
+
         long start = System.currentTimeMillis();
         long max = Long.MIN_VALUE, min = Long.MAX_VALUE;
         for (int i = 0; i < size; i += 1) {
