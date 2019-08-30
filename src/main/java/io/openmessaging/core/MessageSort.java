@@ -1,10 +1,10 @@
-package io.openmessaging;
+package io.openmessaging.core;
 
-import io.openmessaging.unsafe.UnsafeBuffer;
+import io.openmessaging.Constants;
 
-public class MessageSort {
+class MessageSort {
 
-    public static void countSort(MessageBatchWrapper unsorted, MessageBatchWrapper sorted, int size) {
+    static void countSort(MessageBatchWrapper unsorted, MessageBatchWrapper sorted, int size) {
         long[] tUnsorted = unsorted.tArray;
         long[] tSorted = sorted.tArray;
         long[] aUnsorted = unsorted.aArray;

@@ -1,7 +1,5 @@
 package io.openmessaging.unsafe;
 
-import io.openmessaging.Constants;
-
 import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;

@@ -1,10 +1,6 @@
 package io.openmessaging;
 
-import sun.nio.ch.DirectBuffer;
-
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -33,7 +29,7 @@ public class DirectBufferManager {
         return buffer;
     }
 
-    public static void returnBuffer(ByteBuffer buffer) throws Exception {
+    public static void returnBodyBuffer(ByteBuffer buffer) throws Exception {
         messageBufferQueue.put(buffer);
     }
 
@@ -43,7 +39,7 @@ public class DirectBufferManager {
         return buffer;
     }
 
-    public static void returnHeaderBuffer(ByteBuffer buffer) throws Exception {
+    public static void returnABuffer(ByteBuffer buffer) throws Exception {
         headerBufferQueue.put(buffer);
     }
 

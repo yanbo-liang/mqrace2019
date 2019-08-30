@@ -7,7 +7,10 @@ import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 class UnsortedWriter {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -17,7 +20,7 @@ class UnsortedWriter {
 
     static {
         try {
-            fileChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            fileChannel = AsynchronousFileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             executorService.execute(new UnsortedWriterJob());
         } catch (Exception e) {
             e.printStackTrace();

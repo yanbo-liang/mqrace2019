@@ -1,8 +1,6 @@
 package io.openmessaging;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -23,7 +21,7 @@ public class MessageReader {
     public static ByteBuffer read(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         FileChannel fileChannel = messageChannel.get();
         if (fileChannel == null) {
-            fileChannel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.READ);
+            fileChannel = FileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.READ);
             messageChannel.set(fileChannel);
         }
 //        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Message_No_T_Size;

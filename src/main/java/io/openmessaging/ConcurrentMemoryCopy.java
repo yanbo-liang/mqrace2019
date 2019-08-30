@@ -2,7 +2,9 @@ package io.openmessaging;
 
 import io.openmessaging.unsafe.UnsafeBuffer;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ConcurrentMemoryCopy {
     private static int threadCount = 4;

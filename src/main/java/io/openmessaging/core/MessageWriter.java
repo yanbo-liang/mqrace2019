@@ -1,4 +1,7 @@
-package io.openmessaging;
+package io.openmessaging.core;
+
+import io.openmessaging.Constants;
+import io.openmessaging.DirectBufferManager;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
@@ -8,21 +11,19 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MessageWriter {
+class MessageWriter {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static BlockingQueue<MessageBatchWrapper> blockingQueue = new SynchronousQueue<>();
-    private static MessageWriterTask task;
-    private static AsynchronousFileChannel messageChannel, headerChannel;
     private static AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
-    private static long messageTotalByteWritten = 0;
-    private static long headerTotalByteWritten = 0;
+    private static AsynchronousFileChannel bodyChannel, aChannel;
+    private static long bodyTotalByteWritten = 0;
+    private static long aTotalByteWritten = 0;
 
     static {
         try {
-            messageChannel = AsynchronousFileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            headerChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            task = new MessageWriterTask(blockingQueue);
-            executorService.execute(task);
+            bodyChannel = AsynchronousFileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            aChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            executorService.execute(new MessageWriterTask(blockingQueue));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -56,56 +57,56 @@ public class MessageWriter {
         executorService.shutdown();
     }
 
-    static void asyncWrite(ByteBuffer messageBuffer, ByteBuffer headerBuffer) {
+    static void asyncWrite(ByteBuffer bodyBuffer, ByteBuffer aBuffer) {
         pendingAsyncWrite.incrementAndGet();
         pendingAsyncWrite.incrementAndGet();
 
-        messageChannel.write(messageBuffer, messageTotalByteWritten, messageBuffer, new WriteMessageHandler());
-        headerChannel.write(headerBuffer, headerTotalByteWritten, headerBuffer, new WriteHeaderHandler());
+        bodyChannel.write(bodyBuffer, bodyTotalByteWritten, bodyBuffer, new WriteBodyHandler());
+        aChannel.write(aBuffer, aTotalByteWritten, aBuffer, new WriteAHandler());
 
-        messageTotalByteWritten += messageBuffer.limit();
-        headerTotalByteWritten += headerBuffer.limit();
+        bodyTotalByteWritten += bodyBuffer.limit();
+        aTotalByteWritten += aBuffer.limit();
 
-        System.out.println("messageTotalByteWritten " + messageTotalByteWritten);
-        System.out.println("headerTotalByteWritten " + headerTotalByteWritten);
+        System.out.println("bodyTotalByteWritten " + bodyTotalByteWritten);
+        System.out.println("aTotalByteWritten " + aTotalByteWritten);
     }
 
     static void waitAsyncWriteComplete() throws Exception {
         while (pendingAsyncWrite.get() != 0) ;
-        messageChannel.close();
-        headerChannel.close();
+        bodyChannel.close();
+        aChannel.close();
     }
 
-    private static class WriteMessageHandler implements CompletionHandler<Integer, ByteBuffer> {
+    private static class WriteBodyHandler implements CompletionHandler<Integer, ByteBuffer> {
         @Override
-        public void completed(Integer result, ByteBuffer messageBuffer) {
+        public void completed(Integer result, ByteBuffer bodyBuffer) {
             try {
                 pendingAsyncWrite.decrementAndGet();
-                DirectBufferManager.returnBuffer(messageBuffer);
+                DirectBufferManager.returnBodyBuffer(bodyBuffer);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
         @Override
-        public void failed(Throwable exc, ByteBuffer messageBuffer) {
+        public void failed(Throwable exc, ByteBuffer bodyBuffer) {
             exc.printStackTrace();
         }
     }
 
-    private static class WriteHeaderHandler implements CompletionHandler<Integer, ByteBuffer> {
+    private static class WriteAHandler implements CompletionHandler<Integer, ByteBuffer> {
         @Override
-        public void completed(Integer result, ByteBuffer headerBuffer) {
+        public void completed(Integer result, ByteBuffer aBuffer) {
             try {
                 pendingAsyncWrite.decrementAndGet();
-                DirectBufferManager.returnHeaderBuffer(headerBuffer);
+                DirectBufferManager.returnABuffer(aBuffer);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
         @Override
-        public void failed(Throwable exc, ByteBuffer headerBuffer) {
+        public void failed(Throwable exc, ByteBuffer aBuffer) {
             exc.printStackTrace();
         }
     }

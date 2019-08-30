@@ -1,7 +1,9 @@
 package io.openmessaging;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 public class PartitionIndex {
     private static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();

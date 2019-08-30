@@ -48,7 +48,7 @@ public class UnsortedPut {
 
     static {
         try {
-            fileChannel = FileChannel.open(Paths.get(Constants.Message_Path), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+            fileChannel = FileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
             unsafeBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, totalByteWritten, UnsortedConstants.Buffer_Size);
         } catch (Exception e) {
             e.printStackTrace();

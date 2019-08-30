@@ -1,11 +1,14 @@
-package io.openmessaging;
+package io.openmessaging.core;
 
+import io.openmessaging.Constants;
+import io.openmessaging.DirectBufferManager;
+import io.openmessaging.PartitionIndex;
 import io.openmessaging.unsafe.UnsafeWrapper;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 
-public class MessageWriterTask implements Runnable {
+class MessageWriterTask implements Runnable {
     private BlockingQueue<MessageBatchWrapper> blockingQueue;
     private MessageBatchWrapper unsorted = new MessageBatchWrapper(Constants.Batch_Size * 2, false);
     private MessageBatchWrapper sorted = new MessageBatchWrapper(Constants.Batch_Size * 2, false);

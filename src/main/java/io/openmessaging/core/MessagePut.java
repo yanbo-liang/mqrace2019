@@ -1,4 +1,7 @@
-package io.openmessaging;
+package io.openmessaging.core;
+
+import io.openmessaging.Constants;
+import io.openmessaging.Message;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
