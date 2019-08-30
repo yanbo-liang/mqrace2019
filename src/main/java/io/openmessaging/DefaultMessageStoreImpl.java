@@ -19,31 +19,22 @@ public class DefaultMessageStoreImpl extends MessageStore {
         initStart = System.currentTimeMillis();
     }
 
-    int min = Integer.MAX_VALUE;
-    ConcurrentHashMap<Integer, Long> map = new ConcurrentHashMap<>();
 
     @Override
     void put(Message message) {
-        int a = Long.numberOfLeadingZeros(message.getA());
-        long times = map.getOrDefault(a, 0L);
-        map.put(a, times+1);
-//        try {
-////            UnsafePut.put(message);
-//            UnsortedPut.put(message);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            System.exit(1);
-//        }
+        try {
+            UnsafePut.put(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
-            System.out.println("leading zero" + map);
-            System.out.println("total time");
-
             System.out.println(System.currentTimeMillis() - initStart);
-            System.exit(1);
+//            System.exit(1);
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {
