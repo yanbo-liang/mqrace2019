@@ -1,6 +1,5 @@
 package io.openmessaging;
 
-import io.openmessaging.unsafe.UnsafePut;
 import io.openmessaging.unsorted.UnsortedPut;
 import sun.nio.ch.DirectBuffer;
 
@@ -23,7 +22,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     void put(Message message) {
         try {
-            UnsafePut.put(message);
+            MessagePut.put(message);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -38,7 +37,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {
-                    UnsafePut.putEnd();
+//                    UnsafePut.putEnd();
                     readyForRead = true;
                     synchronized (this) {
                         this.notifyAll();

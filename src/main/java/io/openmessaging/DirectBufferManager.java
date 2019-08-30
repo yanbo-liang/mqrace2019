@@ -15,10 +15,10 @@ public class DirectBufferManager {
 
     static {
         compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
-        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Write_Message_Buffer_Size + Constants.Write_Header_Buffer_Size);
+        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Write_Body_Buffer_Size + Constants.Write_A_Buffer_Size);
         for (long i = 0; i < queueSize; i++) {
-            messageBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Message_Buffer_Size));
-            headerBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Header_Buffer_Size));
+            messageBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Body_Buffer_Size));
+            headerBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_A_Buffer_Size));
         }
     }
 
@@ -47,17 +47,17 @@ public class DirectBufferManager {
     }
 
     public static void changeToRead() {
-        List<ByteBuffer> tmp = new ArrayList<>();
-        messageBufferQueue.drainTo(tmp);
-        headerBufferQueue.drainTo(tmp);
-        for (ByteBuffer buffer : tmp) {
-            ((DirectBuffer) buffer).cleaner().clean();
-        }
-
-        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / Constants.Read_Buffer_Size;
-        for (long i = 0; i < queueSize; i++) {
-            ByteBuffer buffer = ByteBuffer.allocateDirect((int) Constants.Read_Buffer_Size);
-            messageBufferQueue.offer(buffer);
-        }
+//        List<ByteBuffer> tmp = new ArrayList<>();
+//        messageBufferQueue.drainTo(tmp);
+//        headerBufferQueue.drainTo(tmp);
+//        for (ByteBuffer buffer : tmp) {
+//            ((DirectBuffer) buffer).cleaner().clean();
+//        }
+//
+//        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / Constants.Read_Buffer_Size;
+//        for (long i = 0; i < queueSize; i++) {
+//            ByteBuffer buffer = ByteBuffer.allocateDirect((int) Constants.Read_Buffer_Size);
+//            messageBufferQueue.offer(buffer);
+//        }
     }
 }
