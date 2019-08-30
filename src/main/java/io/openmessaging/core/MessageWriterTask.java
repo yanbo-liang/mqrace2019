@@ -36,7 +36,7 @@ class MessageWriterTask implements Runnable {
                     MessageBatchWrapper.copy(batchWrapper, 0, unsorted, Constants.Batch_Size, batchWrapper.size);
                 } else {
                     if (isEnd) {
-                        MessageBatchWrapper.copy(unsorted, Constants.Batch_Size, unsorted, 0, Constants.Body_Size);
+                        MessageBatchWrapper.copy(unsorted, Constants.Batch_Size, unsorted, 0, Constants.Batch_Size);
                         MessageBatchWrapper.copy(batchWrapper, 0, unsorted, Constants.Batch_Size, batchWrapper.size);
                     } else {
                         MessageBatchWrapper.copy(batchWrapper, 0, unsorted, 0, batchWrapper.size);

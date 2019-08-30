@@ -55,27 +55,41 @@ public class DefaultMessageStoreImpl extends MessageStore {
             }
             long start = System.currentTimeMillis();
 //            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
-            ByteBuffer buffer = MessageReader.read(null, tMin, tMax);
-            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer) buffer;
-            mappedByteBuffer.force();
+            ByteBuffer aBuffer = MessageReader.readA(null, tMin, tMax);
+            ByteBuffer bodyBuffer = MessageReader.readBody(null, tMin, tMax);
+
 //            buffer.flip();
             long[] tArray = PartitionIndex.getTArray(tMin, tMax);
             int index = 0;
             List<Message> messageList = new ArrayList<>();
-            while (buffer.hasRemaining()) {
-                int dataSize = Constants.Message_Size - 16;
-                long t = tArray[index++];
-                long a = buffer.getLong();
+
+            for (int i = 0; i < tArray.length; i++) {
+                long t = tArray[i];
+                long a = aBuffer.getLong();
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
-                    byte[] b = new byte[dataSize];
-                    buffer.get(b, 0, dataSize);
+                    byte[] b = new byte[Constants.Body_Size];
+                    bodyBuffer.get(b, 0, Constants.Body_Size);
                     messageList.add(new Message(a, t, b));
                 } else {
-                    buffer.position(buffer.position() + dataSize);
+                    bodyBuffer.position(bodyBuffer.position() + Constants.Body_Size);
                 }
             }
+
+//            while (buffer.hasRemaining()) {
+//                int dataSize = Constants.Message_Size - 16;
+//                long t = tArray[index++];
+//                long a = buffer.getLong();
+//                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
+//                    byte[] b = new byte[dataSize];
+//                    buffer.get(b, 0, dataSize);
+//                    messageList.add(new Message(a, t, b));
+//                } else {
+//                    buffer.position(buffer.position() + dataSize);
+//                }
+//            }
 //            DirectBufferManager.returnBodyBuffer(buffer);
-            ((DirectBuffer) buffer).cleaner().clean();
+            ((DirectBuffer) aBuffer).cleaner().clean();
+            ((DirectBuffer) bodyBuffer).cleaner().clean();
 
             System.out.println("gt:\t" + (System.currentTimeMillis() - start));
             return messageList;
@@ -94,8 +108,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
 //            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
             ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
-            MappedByteBuffer mappedByteBuffer = (MappedByteBuffer) buffer;
-            mappedByteBuffer.force();
+
 //            buffer.flip();
             while (buffer.hasRemaining()) {
                 long a = buffer.getLong();

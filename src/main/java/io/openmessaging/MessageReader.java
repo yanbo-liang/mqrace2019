@@ -1,5 +1,6 @@
 package io.openmessaging;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
@@ -7,38 +8,34 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class MessageReader {
-    private static ThreadLocal<FileChannel> messageChannel = new ThreadLocal<>();
-    private static ThreadLocal<FileChannel> aChannel = new ThreadLocal<>();
+    private static FileChannel aChannel;
+    private static FileChannel bodyChannel;
 
     static {
-//        try {
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            aChannel = FileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
+            bodyChannel = FileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.READ);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static ByteBuffer read(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        FileChannel fileChannel = messageChannel.get();
-        if (fileChannel == null) {
-            fileChannel = FileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.READ);
-            messageChannel.set(fileChannel);
-        }
-//        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Message_No_T_Size;
-//        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * Constants.Message_No_T_Size;
-//        return asyncRead(buffer, fileChannel, messageStart, messageEnd - messageStart);
-        return buffer;
+    public static ByteBuffer readA(ByteBuffer buffer, long tMin, long tMax) throws Exception {
+        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 8;
+        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 8;
+        return asyncRead(buffer, aChannel, messageStart, messageEnd - messageStart);
+    }
+
+    public static ByteBuffer readBody(ByteBuffer buffer, long tMin, long tMax) throws Exception {
+        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Body_Size;
+        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * Constants.Body_Size;
+        return asyncRead(buffer, bodyChannel, messageStart, messageEnd - messageStart);
     }
 
     public static ByteBuffer fastRead(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        FileChannel fileChannel = aChannel.get();
-        if (fileChannel == null) {
-            fileChannel = FileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
-            aChannel.set(fileChannel);
-        }
         long aStart = PartitionIndex.getAStart(tMin);
         long aEnd = PartitionIndex.getAEnd(tMax);
-        return asyncRead(buffer, fileChannel, aStart, aEnd - aStart);
+        return asyncRead(buffer, aChannel, aStart, aEnd - aStart);
     }
 
     private static ByteBuffer asyncRead(ByteBuffer buffer, FileChannel channel, long start, long length) throws Exception {
