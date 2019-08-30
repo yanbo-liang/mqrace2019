@@ -26,7 +26,7 @@ public class UnsortedPut {
         }
         min += UnsortedConstants.Partition_Size;
         max += UnsortedConstants.Partition_Size;
-        unsafeBuffer.position(count.get() * Constants.Message_Size);
+        unsafeBuffer.position(count.get() * (Constants.Message_Size-8));
         unsafeBuffer.flip();
         UnsortedWriter.write(unsafeBuffer);
         unsafeBuffer = UnsortedBufferManager.borrowBuffer();
@@ -51,10 +51,12 @@ public class UnsortedPut {
                 break;
             }
         }
-        int index = count.getAndIncrement() * Constants.Message_Size;
-        unsafeBuffer.putLong(index, message.getT());
-        unsafeBuffer.putLong(index + 8, message.getA());
-        unsafeBuffer.put(index + 16, message.getBody());
+        int index = count.getAndIncrement() * (Constants.Message_Size-8);
+//        unsafeBuffer.putLong(index, message.getT());
+//        unsafeBuffer.putLong(index + 8, message.getA());
+//        unsafeBuffer.put(index + 16, message.getBody());
+        unsafeBuffer.putLong(index , message.getA());
+        unsafeBuffer.put(index + 8, message.getBody());
     }
 
 

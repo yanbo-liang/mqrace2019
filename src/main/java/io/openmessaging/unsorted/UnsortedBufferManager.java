@@ -9,6 +9,7 @@ class UnsortedBufferManager {
     private static BlockingQueue<UnsafeBuffer> queue = new LinkedBlockingQueue<>();
 
     static {
+        System.out.println(UnsortedConstants.Buffer_Queue_Size);
         for (long i = 0; i < UnsortedConstants.Buffer_Queue_Size; i++) {
             queue.offer(new UnsafeBuffer(UnsortedConstants.Buffer_Size));
         }
