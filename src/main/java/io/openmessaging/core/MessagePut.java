@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessagePut {
     private static volatile CountDownLatch latch = new CountDownLatch(Constants.Thread_Count - 1);
-    private static MessageBatchWrapper batchWrapper = new MessageBatchWrapper(Constants.Batch_Size, false);
+    private static MessageBatchWrapper batchWrapper = new MessageBatchWrapper(Constants.Batch_Size);
     private static AtomicInteger messageCount = new AtomicInteger(0);
 
     public static void put(Message message) throws Exception {
@@ -21,7 +21,7 @@ public class MessagePut {
 
             latch.await(1, TimeUnit.SECONDS);
 
-            MessageWriter.writeToQueue(batchWrapper);
+            MessageWriter.writeToQueue(batchWrapper, Constants.Batch_Size);
             messageCount.set(0);
             synchronized (latch) {
                 latch.notifyAll();
@@ -38,6 +38,6 @@ public class MessagePut {
     }
 
     public static void putEnd() throws Exception {
-        MessageWriter.writeToQueueEnd(batchWrapper);
+        MessageWriter.writeToQueueEnd(batchWrapper,messageCount.get());
     }
 }

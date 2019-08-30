@@ -23,7 +23,7 @@ public class DirectBufferManager {
         return compressedBuffer;
     }
 
-    public static ByteBuffer borrowBuffer() throws Exception {
+    public static ByteBuffer borrowBodyBuffer() throws Exception {
         ByteBuffer buffer = messageBufferQueue.take();
         buffer.clear();
         return buffer;
@@ -33,7 +33,7 @@ public class DirectBufferManager {
         messageBufferQueue.put(buffer);
     }
 
-    public static ByteBuffer borrowHeaderBuffer() throws Exception {
+    public static ByteBuffer borrowABuffer() throws Exception {
         ByteBuffer buffer = headerBufferQueue.take();
         buffer.clear();
         return buffer;

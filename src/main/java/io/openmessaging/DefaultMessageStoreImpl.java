@@ -37,7 +37,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {
-//                    UnsafePut.putEnd();
+                    MessagePut.putEnd();
                     readyForRead = true;
                     synchronized (this) {
                         this.notifyAll();
@@ -54,7 +54,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
             long start = System.currentTimeMillis();
-//            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+//            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
             ByteBuffer buffer = MessageReader.read(null, tMin, tMax);
             MappedByteBuffer mappedByteBuffer = (MappedByteBuffer) buffer;
             mappedByteBuffer.force();
@@ -92,7 +92,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long start = System.currentTimeMillis();
             long sum = 0, count = 0;
 
-//            ByteBuffer buffer = DirectBufferManager.borrowBuffer();
+//            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
             ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
             MappedByteBuffer mappedByteBuffer = (MappedByteBuffer) buffer;
             mappedByteBuffer.force();

@@ -29,9 +29,9 @@ class MessageWriter {
         }
     }
 
-    static void writeToQueue(MessageBatchWrapper batchWrapper) throws Exception {
+    static void writeToQueue(MessageBatchWrapper batchWrapper, int size) throws Exception {
         long start = System.currentTimeMillis();
-
+        batchWrapper.size = size;
         boolean offer = blockingQueue.offer(batchWrapper, 5, TimeUnit.SECONDS);
         if (!offer) {
             System.exit(1);
@@ -46,7 +46,9 @@ class MessageWriter {
 
     }
 
-    static void writeToQueueEnd(MessageBatchWrapper batchWrapper) throws Exception {
+    static void writeToQueueEnd(MessageBatchWrapper batchWrapper, int size) throws Exception {
+        batchWrapper.size = size;
+        batchWrapper.isEnd = true;
         boolean offer = blockingQueue.offer(batchWrapper, 5, TimeUnit.SECONDS);
         if (!offer) {
             System.exit(1);
