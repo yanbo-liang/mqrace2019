@@ -10,9 +10,9 @@ public class Constants {
     public static String Message_Path = "/alidata1/race2019/data/message";
     public static String A_Path = "/alidata1/race2019/data/header";
 
+    public static int Thread_Count = 12;
     public static int Body_Size = Message_Size - 16;
     public static int Batch_Size = 5000000;
-    public static int Thread_Count = 12;
 
     public static long Direct_Memory_Size = 2L * 1024 * 1024 * 1024;
     public static long Compressed_Buffer_Size = 500 * 1024 * 1024;

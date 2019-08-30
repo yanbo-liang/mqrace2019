@@ -16,6 +16,7 @@ public class DirectBufferManager {
     static {
         compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
         long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Write_Body_Buffer_Size + Constants.Write_A_Buffer_Size);
+        System.out.println("queueSize"+queueSize);
         for (long i = 0; i < queueSize; i++) {
             messageBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Body_Buffer_Size));
             headerBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_A_Buffer_Size));
