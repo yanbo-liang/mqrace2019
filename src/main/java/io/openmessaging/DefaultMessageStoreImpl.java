@@ -7,6 +7,7 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultMessageStoreImpl extends MessageStore {
@@ -19,13 +20,13 @@ public class DefaultMessageStoreImpl extends MessageStore {
     }
 
     int min = Integer.MAX_VALUE;
+    ConcurrentHashMap<Integer, Long> map = new ConcurrentHashMap<>();
 
     @Override
     void put(Message message) {
         int a = Long.numberOfLeadingZeros(message.getA());
-        if (a < min) {
-            min = a;
-        }
+        long times = map.getOrDefault(a, 0L);
+        map.put(a, times+1);
 //        try {
 ////            UnsafePut.put(message);
 //            UnsortedPut.put(message);
@@ -38,7 +39,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
-            System.out.println("leading zero"+min);
+            System.out.println("leading zero" + map);
             System.out.println("total time");
 
             System.out.println(System.currentTimeMillis() - initStart);
