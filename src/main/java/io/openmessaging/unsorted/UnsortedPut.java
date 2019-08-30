@@ -36,6 +36,7 @@ public class UnsortedPut {
         unsafeBuffer.force();
         unsafeBuffer.flip();
         totalByteWritten += count.get() * (Constants.Message_Size - 8);
+        System.out.println("totalByteWritten"+totalByteWritten);
         try {
             unsafeBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, totalByteWritten, UnsortedConstants.Buffer_Size);
 
