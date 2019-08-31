@@ -7,8 +7,11 @@ class MessageSort {
     static void countSort(MessageBatchWrapper unsorted, MessageBatchWrapper sorted, int size) {
         long[] tUnsorted = unsorted.tArray;
         long[] tSorted = sorted.tArray;
-        byte[] aUnsorted = unsorted.aArray.array();
-        byte[] aSorted = sorted.aArray.array();
+//        byte[] aUnsorted = unsorted.aArray.array();
+//        byte[] aSorted = sorted.aArray.array();
+        long[] aUnsorted = unsorted.aArray;
+        long[] aSorted = sorted.aArray;
+
         byte[] bodyUnsorted = unsorted.bodyArray;
         byte[] bodySorted = sorted.bodyArray;
 
@@ -54,8 +57,8 @@ class MessageSort {
             long l = tUnsorted[i];
             int index = --times[(int) (l - min)];
             tSorted[index] = l;
-//            aSorted[index] = aUnsorted[i];
-            System.arraycopy(aUnsorted, i * 8, aSorted, index * 8, 8);
+            aSorted[index] = aUnsorted[i];
+//            System.arraycopy(aUnsorted, i * 8, aSorted, index * 8, 8);
             System.arraycopy(bodyUnsorted, i * Constants.Body_Size, bodySorted, index * Constants.Body_Size, Constants.Body_Size);
 
 //            UnsafeBuffer.copy(unsorted.getAddress() + i, sorted.getAddress() + (--times[(int) (l - min)] * Constants.Message_Size), Constants.Message_Size);

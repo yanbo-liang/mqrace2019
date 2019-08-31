@@ -96,19 +96,18 @@ class MessageWriterTask implements Runnable {
         ByteBuffer aBuffer = DirectBufferManager.borrowABuffer();
 
         long[] tArray = sorted.tArray;
-        byte[] aArray = sorted.aArray.array();
+        long[] aArray = sorted.aArray;
         byte[] bodyArray = sorted.bodyArray;
 
         for (int i = start; i < limit; i += 1) {
-            PartitionIndex.buildIndex(tArray[i]);
+            PartitionIndex.buildIndex(tArray[i],aArray[i],aBuffer);
         }
 
         int length = limit - start;
         UnsafeWrapper.unsafeCopy(bodyArray, start, bodyBuffer, 0, length);
-        UnsafeWrapper.unsafeCopyA(aArray, start, aBuffer, 0, length);
+//        UnsafeWrapper.unsafeCopyA(aArray, start, aBuffer, 0, length);
 
         bodyBuffer.position(length * Constants.Body_Size);
-        aBuffer.position(length * 8);
 
         bodyBuffer.flip();
         aBuffer.flip();
