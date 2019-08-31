@@ -61,7 +61,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             List<Message> messageList = new ArrayList<>();
             for (int i = 0; i < tArray.length; i++) {
                 long t = tArray[i];
-                long a = aBuffer.getLong();
+                long a = readA(aBuffer);
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                     byte[] b = new byte[Constants.Body_Size];
                     bodyBuffer.get(b, 0, Constants.Body_Size);
@@ -84,10 +84,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //                }
 //            }
 //            DirectBufferManager.returnBodyBuffer(buffer);
-            if (aBuffer instanceof DirectBuffer){
+            if (aBuffer instanceof DirectBuffer) {
                 ((DirectBuffer) aBuffer).cleaner().clean();
             }
-            if (bodyBuffer instanceof DirectBuffer){
+            if (bodyBuffer instanceof DirectBuffer) {
                 ((DirectBuffer) bodyBuffer).cleaner().clean();
             }
             System.out.println("gt:\t" + (System.currentTimeMillis() - start));
@@ -98,6 +98,26 @@ public class DefaultMessageStoreImpl extends MessageStore {
         return new ArrayList<>();
     }
 
+    long readA(ByteBuffer buffer) {
+        byte b1 = buffer.get();
+        byte b2 = buffer.get();
+        byte b3 = buffer.get();
+        byte b4 = buffer.get();
+        byte b5 = buffer.get();
+        byte b6 = buffer.get();
+        long a = ((b1 & 0xffL) << 40) |
+                ((b2 & 0xffL) << 32) |
+                ((b3 & 0xffL) << 24) |
+                ((b4 & 0xffL) << 16) |
+                ((b5 & 0xffL) << 8) |
+                ((b6 & 0xffL));
+        if (a != 0) {
+            return a;
+        } else {
+            return buffer.getLong();
+        }
+    }
+
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         try {
@@ -106,17 +126,30 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long sum = 0, count = 0;
 
 //            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
-            ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
-            while (buffer.hasRemaining()) {
-                long a = buffer.getLong();
-                if (aMin <= a && a <= aMax) {
+            ByteBuffer aBuffer = MessageReader.readA(null, tMin, tMax);
+//            while (buffer.hasRemaining()) {
+//                long a = buffer.getLong();
+//                if (aMin <= a && a <= aMax) {
+//                    sum += a;
+//                    count += 1;
+//                }
+//            }
+
+
+            long[] tArray = PartitionIndex.getTArray(tMin, tMax);
+            for (int i = 0; i < tArray.length; i++) {
+                long t = tArray[i];
+                long a = readA(aBuffer);
+                if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
                     sum += a;
                     count += 1;
                 }
             }
+
+
 //            DirectBufferManager.returnBodyBuffer(buffer);
-            if (buffer instanceof DirectBuffer){
-                ((DirectBuffer) buffer).cleaner().clean();
+            if (aBuffer instanceof DirectBuffer) {
+                ((DirectBuffer) aBuffer).cleaner().clean();
 
             }
             System.out.println("average:" + (System.currentTimeMillis() - start));

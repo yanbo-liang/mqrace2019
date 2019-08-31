@@ -2,12 +2,10 @@ package io.openmessaging;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.Semaphore;
 
 public class MessageReader {
     private static FileChannel aChannel;
@@ -25,8 +23,8 @@ public class MessageReader {
     }
 
     public static ByteBuffer readA(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 8;
-        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 8;
+        long messageStart = PartitionIndex.getAStart(tMin);
+        long messageEnd = PartitionIndex.getAEnd(tMax);
         ByteBuffer byteBuffer = aLocalBuffer.get();
 
         return adaptiveRead(byteBuffer, aChannel, messageStart, messageEnd - messageStart);
@@ -34,11 +32,11 @@ public class MessageReader {
     }
 
     public static ByteBuffer readBody(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Body_Size;
-        long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * Constants.Body_Size;
+        long messageStart = PartitionIndex.getBodyStart(tMin);
+        long messageEnd = PartitionIndex.getBodyEnd(tMax);
         ByteBuffer byteBuffer = bodyLocalBuffer.get();
 
-        return adaptiveRead(byteBuffer,bodyChannel, messageStart, messageEnd - messageStart);
+        return adaptiveRead(byteBuffer, bodyChannel, messageStart, messageEnd - messageStart);
 
     }
 
@@ -47,7 +45,7 @@ public class MessageReader {
         long aEnd = PartitionIndex.getAEnd(tMax);
         ByteBuffer byteBuffer = aLocalBuffer.get();
 
-        return adaptiveRead(byteBuffer,aChannel, aStart, aEnd - aStart);
+        return adaptiveRead(byteBuffer, aChannel, aStart, aEnd - aStart);
 
     }
 
