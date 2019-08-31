@@ -7,6 +7,7 @@ import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.Semaphore;
 
 public class MessageReader {
     private static FileChannel aChannel;
@@ -40,17 +41,19 @@ public class MessageReader {
         long aEnd = PartitionIndex.getAEnd(tMax);
         return adaptiveRead(aChannel,aStart,aEnd-aStart);
     }
-
+private static Semaphore semaphore = new Semaphore(5);
     private static ByteBuffer adaptiveRead(FileChannel channel, long start, long length) throws Exception {
         if (length > 1024 * 1024) {
             System.out.println("mmap:\t" + length);
             return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
         } else {
+            semaphore.acquire();
             long readStart = System.currentTimeMillis();
             ByteBuffer buffer = ByteBuffer.allocate((int)length);
             channel.read(buffer, start);
             buffer.flip();
             System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t" + length);
+            semaphore.release();
             return buffer;
         }
     }
