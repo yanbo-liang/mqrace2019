@@ -52,7 +52,12 @@ public class MessageReader {
             }
         }
         if (breakpoint != -1) {
-            messageStart = PartitionIndex.partitionMap.get(breakpoint).aStart;
+            PartitionIndex.PartitionInfo partitionInfo = PartitionIndex.partitionMap.get(breakpoint);
+            if (partitionInfo==null){
+                byteBuffer.flip();
+                return byteBuffer;
+            }
+            messageStart = partitionInfo.aStart;
             adaptiveRead(byteBuffer, aChannel, messageStart);
         }else{
             byteBuffer.flip();

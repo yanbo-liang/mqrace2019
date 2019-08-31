@@ -24,7 +24,7 @@ public class MessageCache {
 
     public static void buildCache() throws Exception {
         long size = 3000000000L;
-//        long size = 100000000L;
+        long size1 = 1500000000L;
 
         NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.partitionMap;
         Set<Map.Entry<Long, PartitionIndex.PartitionInfo>> entries = partitionMap.entrySet();
@@ -33,7 +33,13 @@ public class MessageCache {
 
             long length = value.aEnd - value.aStart;
             if (size < length) {
-                break;
+                if (size1<length){
+                    break;
+                }
+                ByteBuffer buffer1 = ByteBuffer.allocateDirect((int) length);
+                aChannel.read(buffer1, value.aStart);
+                map.put(entry.getKey(), buffer1);
+                size1 -= length;
             }
             ByteBuffer buffer = ByteBuffer.allocate((int) length);
             aChannel.read(buffer, value.aStart);
