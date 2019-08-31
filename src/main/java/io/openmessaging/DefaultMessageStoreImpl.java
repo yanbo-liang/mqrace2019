@@ -1,10 +1,11 @@
 package io.openmessaging;
 
 import io.openmessaging.core.MessagePut;
+import io.openmessaging.core.MessageReader;
+import io.openmessaging.core.PartitionIndex;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -2,7 +2,6 @@ package io.openmessaging.core;
 
 import io.openmessaging.Constants;
 import io.openmessaging.DirectBufferManager;
-import io.openmessaging.PartitionIndex;
 import io.openmessaging.unsafe.UnsafeWrapper;
 
 import java.nio.ByteBuffer;

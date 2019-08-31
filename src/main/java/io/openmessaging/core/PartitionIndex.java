@@ -1,4 +1,8 @@
-package io.openmessaging;
+package io.openmessaging.core;
+
+import io.openmessaging.CompressUtil;
+import io.openmessaging.Constants;
+import io.openmessaging.DirectBufferManager;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
