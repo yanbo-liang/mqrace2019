@@ -57,12 +57,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
             ByteBuffer aBuffer = MessageReader.readA(null, tMin, tMax);
             ByteBuffer bodyBuffer = MessageReader.readBody(null, tMin, tMax);
-
-//            buffer.flip();
             long[] tArray = PartitionIndex.getTArray(tMin, tMax);
-            int index = 0;
             List<Message> messageList = new ArrayList<>();
-
             for (int i = 0; i < tArray.length; i++) {
                 long t = tArray[i];
                 long a = aBuffer.getLong();
@@ -88,9 +84,12 @@ public class DefaultMessageStoreImpl extends MessageStore {
 //                }
 //            }
 //            DirectBufferManager.returnBodyBuffer(buffer);
-            ((DirectBuffer) aBuffer).cleaner().clean();
-            ((DirectBuffer) bodyBuffer).cleaner().clean();
-
+            if (aBuffer instanceof DirectBuffer){
+                ((DirectBuffer) aBuffer).cleaner().clean();
+            }
+            if (bodyBuffer instanceof DirectBuffer){
+                ((DirectBuffer) bodyBuffer).cleaner().clean();
+            }
             System.out.println("gt:\t" + (System.currentTimeMillis() - start));
             return messageList;
         } catch (Exception e) {
@@ -108,8 +107,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
 //            ByteBuffer buffer = DirectBufferManager.borrowBodyBuffer();
             ByteBuffer buffer = MessageReader.fastRead(null, tMin, tMax);
-
-//            buffer.flip();
             while (buffer.hasRemaining()) {
                 long a = buffer.getLong();
                 if (aMin <= a && a <= aMax) {
@@ -118,8 +115,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
 //            DirectBufferManager.returnBodyBuffer(buffer);
-            ((DirectBuffer) buffer).cleaner().clean();
+            if (buffer instanceof DirectBuffer){
+                ((DirectBuffer) buffer).cleaner().clean();
 
+            }
             System.out.println("average:" + (System.currentTimeMillis() - start));
             return count == 0 ? 0 : sum / count;
 

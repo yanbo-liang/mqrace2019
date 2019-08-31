@@ -2,6 +2,7 @@ package io.openmessaging;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -23,35 +24,51 @@ public class MessageReader {
     public static ByteBuffer readA(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 8;
         long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 8;
-        return asyncRead(buffer, aChannel, messageStart, messageEnd - messageStart);
+        return adaptiveRead(aChannel,messageStart,messageEnd-messageStart);
+
     }
 
     public static ByteBuffer readBody(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Body_Size;
         long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * Constants.Body_Size;
-        return asyncRead(buffer, bodyChannel, messageStart, messageEnd - messageStart);
+        return adaptiveRead(bodyChannel,messageStart,messageEnd-messageStart);
+
     }
 
     public static ByteBuffer fastRead(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         long aStart = PartitionIndex.getAStart(tMin);
         long aEnd = PartitionIndex.getAEnd(tMax);
-        return asyncRead(buffer, aChannel, aStart, aEnd - aStart);
+        return adaptiveRead(aChannel,aStart,aEnd-aStart);
     }
 
-    private static ByteBuffer asyncRead(ByteBuffer buffer, FileChannel channel, long start, long length) throws Exception {
-        long readStart = System.currentTimeMillis();
+    private static ByteBuffer adaptiveRead(FileChannel channel, long start, long length) throws Exception {
+        if (length > 1024 * 1024) {
+            System.out.println("mmap:\t" + length);
+            return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
+        } else {
+            long readStart = System.currentTimeMillis();
+            ByteBuffer buffer = ByteBuffer.allocate((int)length);
+            channel.read(buffer, start);
+            buffer.flip();
+            System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t" + length);
+            return buffer;
+        }
+    }
+
+//    private static ByteBuffer asyncRead(ByteBuffer buffer, AsynchronousFileChannel channel, long start, long length) throws Exception {
+//        long readStart = System.currentTimeMillis();
 //        synchronized (buffer) {
-//        buffer.limit((int) length);
+//            buffer.limit((int) length);
 //            channel.read(buffer, start, buffer, new WriteCompletionHandler());
-//        channel.read(buffer, start);
+//            channel.read(buffer, start);
 //            buffer.wait();
 //        }
-        System.out.println("rb:\t" + length);
-
-        System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
-        return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
-
-    }
+//        System.out.println("rb:\t" + length);
+//
+//        System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
+//        return;
+//
+//    }
 
     private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
         @Override
