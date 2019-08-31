@@ -32,6 +32,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
+            long heapSize = Runtime.getRuntime().totalMemory();
+            System.out.println("heapSize "+heapSize);
             System.out.println(System.currentTimeMillis() - initStart);
 //            System.exit(1);
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
@@ -121,6 +123,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         try {
+
             System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
             long start = System.currentTimeMillis();
             long sum = 0, count = 0;
