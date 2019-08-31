@@ -1,6 +1,7 @@
 package io.openmessaging.core;
 
 import io.openmessaging.Constants;
+import io.openmessaging.Message;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -8,12 +9,14 @@ import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.NavigableMap;
 
 public class MessageReader {
     private static FileChannel aChannel;
     private static FileChannel bodyChannel;
-    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(1024 * 1024));
-    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(1024 * 1024));
+    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4*1024 * 1024));
+    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4*1024 * 1024));
 
     static {
         try {
@@ -25,11 +28,36 @@ public class MessageReader {
     }
 
     public static ByteBuffer readA(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        long messageStart = PartitionIndex.getAStart(tMin);
-        long messageEnd = PartitionIndex.getAEnd(tMax);
+        long min = tMin / 1000;
+        long max = tMax / 1000;
         ByteBuffer byteBuffer = aLocalBuffer.get();
 
-        return adaptiveRead(byteBuffer, aChannel, messageStart, messageEnd - messageStart);
+        long messageStart = PartitionIndex.getAStart(tMin);
+        long messageEnd = PartitionIndex.getAEnd(tMax);
+        int length = (int) (messageEnd - messageStart);
+        byteBuffer.clear();
+        byteBuffer.limit(length);
+
+        long breakpoint = -1;
+        for (long i = min; i <= max; i++) {
+            ByteBuffer byteBuffer1 = MessageCache.map.get(i);
+            if (byteBuffer1 != null) {
+                for (int j = 0; j < byteBuffer1.limit(); j++) {
+                    byteBuffer.put(byteBuffer1.get(j));
+                }
+                length -= byteBuffer1.limit();
+            } else {
+                breakpoint = i;
+                break;
+            }
+        }
+        if (breakpoint != -1) {
+            messageStart = PartitionIndex.partitionMap.get(breakpoint).aStart;
+            adaptiveRead(byteBuffer, aChannel, messageStart);
+        }else{
+            byteBuffer.flip();
+        }
+        return byteBuffer;
 
     }
 
@@ -37,37 +65,29 @@ public class MessageReader {
         long messageStart = PartitionIndex.getBodyStart(tMin);
         long messageEnd = PartitionIndex.getBodyEnd(tMax);
         ByteBuffer byteBuffer = bodyLocalBuffer.get();
-
-        return adaptiveRead(byteBuffer, bodyChannel, messageStart, messageEnd - messageStart);
-
-    }
-
-    public static ByteBuffer fastRead(ByteBuffer buffer, long tMin, long tMax) throws Exception {
-        long aStart = PartitionIndex.getAStart(tMin);
-        long aEnd = PartitionIndex.getAEnd(tMax);
-        ByteBuffer byteBuffer = aLocalBuffer.get();
-
-        return adaptiveRead(byteBuffer, aChannel, aStart, aEnd - aStart);
+        byteBuffer.clear();
+        byteBuffer.limit((int) (messageEnd - messageStart));
+        return adaptiveRead(byteBuffer, bodyChannel, messageStart);
 
     }
 
     //private static Semaphore semaphore = new Semaphore(1);
-    private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, FileChannel channel, long start, long length) throws Exception {
-        if (length > 1024 * 1024) {
-            System.out.println("mmap:\t" + length);
-            return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
-        } else {
+    private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, FileChannel channel, long start) throws Exception {
+//        if (length > 1024 * 1024) {
+//            System.out.println("mmap:\t" + length);
+//            return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
+//        } else {
 //            semaphore.acquire();
-            long readStart = System.currentTimeMillis();
-            byteBuffer.clear();
-            byteBuffer.limit((int) length);
-            channel.read(byteBuffer, start);
-            byteBuffer.flip();
-            System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t" + length + "\trs:\t" + start);
+        long readStart = System.currentTimeMillis();
+
+        channel.read(byteBuffer, start);
+        byteBuffer.flip();
+        System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t");
 //            semaphore.release();
-            return byteBuffer;
-        }
+        return byteBuffer;
     }
+}
+
 
 //    private static ByteBuffer asyncRead(ByteBuffer buffer, AsynchronousFileChannel channel, long start, long length) throws Exception {
 //        long readStart = System.currentTimeMillis();
@@ -84,18 +104,17 @@ public class MessageReader {
 //
 //    }
 
-    private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
-        @Override
-        public void completed(Integer result, ByteBuffer buffer) {
-            synchronized (buffer) {
-                System.out.println("rb:\t" + result);
-                buffer.notify();
-            }
-        }
-
-        @Override
-        public void failed(Throwable exc, ByteBuffer attachment) {
-            exc.printStackTrace();
-        }
-    }
-}
+//    private static class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
+//        @Override
+//        public void completed(Integer result, ByteBuffer buffer) {
+//            synchronized (buffer) {
+//                System.out.println("rb:\t" + result);
+//                buffer.notify();
+//            }
+//        }
+//
+//        @Override
+//        public void failed(Throwable exc, ByteBuffer attachment) {
+//            exc.printStackTrace();
+//        }
+//    }

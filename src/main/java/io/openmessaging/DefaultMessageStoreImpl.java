@@ -1,5 +1,6 @@
 package io.openmessaging;
 
+import io.openmessaging.core.MessageCache;
 import io.openmessaging.core.MessagePut;
 import io.openmessaging.core.MessageReader;
 import io.openmessaging.core.PartitionIndex;
@@ -37,7 +38,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
             long heapSize = Runtime.getRuntime().totalMemory();
-            System.out.println("heapSize "+heapSize);
+            System.out.println("heapSize " + heapSize);
             System.out.println(System.currentTimeMillis() - initStart);
 //            System.exit(1);
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
@@ -45,8 +46,8 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 if (getStarted.compareAndSet(false, true)) {
 
                     MessagePut.putEnd();
-                    a=new byte[2000000000];
-                    b=new byte[1000000000];
+                    DirectBufferManager.freeWriteBuffer();
+                    MessageCache.buildCache();
 
                     readyForRead = true;
                     synchronized (this) {

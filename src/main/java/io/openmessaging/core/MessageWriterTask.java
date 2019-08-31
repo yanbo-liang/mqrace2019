@@ -64,7 +64,6 @@ class MessageWriterTask implements Runnable {
                 if (isEnd) {
                     processBatch(Constants.Batch_Size, size, true);
                     PartitionIndex.flushIndex();
-                    DirectBufferManager.changeToRead();
                 }
                 System.out.println("batch time: " + (System.currentTimeMillis() - start));
 

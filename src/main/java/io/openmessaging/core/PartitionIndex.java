@@ -10,7 +10,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public class PartitionIndex {
-    private static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
+     static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
     private static long partitionSize = 1000;
     private static long tMin = 0, tMax = partitionSize - 1;
     private static long mStart = 0, mTotal = 0;

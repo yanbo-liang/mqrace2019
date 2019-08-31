@@ -30,7 +30,7 @@ public class DemoTester {
         // 每次查询消息的最大跨度
         int maxMsgCheckSize = 100000;
         // 每次查询求平均的最大跨度
-        int maxValueCheckSize = 1000000;
+        int maxValueCheckSize = 100000;
 
         MessageStore messageStore = null;
 
