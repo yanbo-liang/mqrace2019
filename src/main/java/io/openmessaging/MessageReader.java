@@ -12,8 +12,8 @@ import java.util.concurrent.Semaphore;
 public class MessageReader {
     private static FileChannel aChannel;
     private static FileChannel bodyChannel;
-    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(1024 * 1024));
-    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(1024 * 1024));
+    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(2048 * 1024));
+    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(2048 * 1024));
 
     static {
         try {
@@ -53,7 +53,7 @@ public class MessageReader {
 
     //private static Semaphore semaphore = new Semaphore(1);
     private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, FileChannel channel, long start, long length) throws Exception {
-        if (length > 512 * 1024) {
+        if (length > 2048 * 1024) {
             System.out.println("mmap:\t" + length);
             return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
         } else {
