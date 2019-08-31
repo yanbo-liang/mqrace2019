@@ -46,6 +46,8 @@ public class MessageReader {
 //        channel.read(buffer, start);
 //            buffer.wait();
 //        }
+        System.out.println("rb:\t" + length);
+
         System.out.println("rt:\t" + (System.currentTimeMillis() - readStart));
         return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
 
