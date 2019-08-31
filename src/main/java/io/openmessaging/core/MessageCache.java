@@ -40,6 +40,7 @@ public class MessageCache {
                 aChannel.read(buffer1, value.aStart);
                 map.put(entry.getKey(), buffer1);
                 size1 -= length;
+                continue;
             }
             ByteBuffer buffer = ByteBuffer.allocate((int) length);
             aChannel.read(buffer, value.aStart);
