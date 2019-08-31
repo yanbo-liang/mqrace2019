@@ -53,7 +53,7 @@ public class MessageReader {
 
     //private static Semaphore semaphore = new Semaphore(1);
     private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, FileChannel channel, long start, long length) throws Exception {
-        if (length > 1024 * 1024) {
+        if (length > 512 * 1024) {
             System.out.println("mmap:\t" + length);
             return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
         } else {
