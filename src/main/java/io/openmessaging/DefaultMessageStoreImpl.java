@@ -14,6 +14,9 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private volatile boolean readyForRead = false;
     private long initStart;
 
+    private byte[] a;
+    private byte[] b;
+
     public DefaultMessageStoreImpl() {
         initStart = System.currentTimeMillis();
     }
@@ -39,7 +42,11 @@ public class DefaultMessageStoreImpl extends MessageStore {
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {
+
                     MessagePut.putEnd();
+                    a=new byte[2000000000];
+                    b=new byte[1000000000];
+
                     readyForRead = true;
                     synchronized (this) {
                         this.notifyAll();
