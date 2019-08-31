@@ -56,7 +56,7 @@ class MessageWriter {
         synchronized (MessageWriter.class) {
             MessageWriter.class.wait();
         }
-        executorService.shutdown();
+//        executorService.shutdown();
     }
 
     static void asyncWrite(ByteBuffer bodyBuffer, ByteBuffer aBuffer) {

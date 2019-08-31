@@ -76,6 +76,8 @@ class MessageWriterTask implements Runnable {
 
                 System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
                 if (isEnd) {
+                    sorted=null;
+                    unsorted=null;
                     synchronized (MessageWriter.class) {
                         MessageWriter.class.notify();
                     }

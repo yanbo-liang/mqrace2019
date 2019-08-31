@@ -39,5 +39,6 @@ public class MessagePut {
 
     public static void putEnd() throws Exception {
         MessageWriter.writeToQueueEnd(batchWrapper,messageCount.get());
+        batchWrapper=null;
     }
 }

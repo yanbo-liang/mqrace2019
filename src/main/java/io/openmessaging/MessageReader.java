@@ -12,6 +12,8 @@ import java.util.concurrent.Semaphore;
 public class MessageReader {
     private static FileChannel aChannel;
     private static FileChannel bodyChannel;
+    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(1024 * 1024));
+    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(1024 * 1024));
 
     static {
         try {
@@ -25,36 +27,45 @@ public class MessageReader {
     public static ByteBuffer readA(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * 8;
         long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * 8;
-        return adaptiveRead(aChannel,messageStart,messageEnd-messageStart);
+        ByteBuffer byteBuffer = aLocalBuffer.get();
+
+        return adaptiveRead(byteBuffer, aChannel, messageStart, messageEnd - messageStart);
 
     }
 
     public static ByteBuffer readBody(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         long messageStart = PartitionIndex.getMessageStart(tMin) / Constants.Message_Size * Constants.Body_Size;
         long messageEnd = PartitionIndex.getMessageEnd(tMax) / Constants.Message_Size * Constants.Body_Size;
-        return adaptiveRead(bodyChannel,messageStart,messageEnd-messageStart);
+        ByteBuffer byteBuffer = bodyLocalBuffer.get();
+
+        return adaptiveRead(byteBuffer,bodyChannel, messageStart, messageEnd - messageStart);
 
     }
 
     public static ByteBuffer fastRead(ByteBuffer buffer, long tMin, long tMax) throws Exception {
         long aStart = PartitionIndex.getAStart(tMin);
         long aEnd = PartitionIndex.getAEnd(tMax);
-        return adaptiveRead(aChannel,aStart,aEnd-aStart);
+        ByteBuffer byteBuffer = aLocalBuffer.get();
+
+        return adaptiveRead(byteBuffer,aChannel, aStart, aEnd - aStart);
+
     }
-private static Semaphore semaphore = new Semaphore(1);
-    private static ByteBuffer adaptiveRead(FileChannel channel, long start, long length) throws Exception {
+
+    //private static Semaphore semaphore = new Semaphore(1);
+    private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, FileChannel channel, long start, long length) throws Exception {
         if (length > 1024 * 1024) {
             System.out.println("mmap:\t" + length);
             return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
         } else {
-            semaphore.acquire();
+//            semaphore.acquire();
             long readStart = System.currentTimeMillis();
-            ByteBuffer buffer = ByteBuffer.allocate((int)length);
-            channel.read(buffer, start);
-            buffer.flip();
-            System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t" + length);
-            semaphore.release();
-            return buffer;
+            byteBuffer.clear();
+            byteBuffer.limit((int) length);
+            channel.read(byteBuffer, start);
+            byteBuffer.flip();
+            System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t" + length + "\trs:\t" + start);
+//            semaphore.release();
+            return byteBuffer;
         }
     }
 
