@@ -41,7 +41,7 @@ public class MessageReader {
         long aEnd = PartitionIndex.getAEnd(tMax);
         return adaptiveRead(aChannel,aStart,aEnd-aStart);
     }
-private static Semaphore semaphore = new Semaphore(5);
+private static Semaphore semaphore = new Semaphore(1);
     private static ByteBuffer adaptiveRead(FileChannel channel, long start, long length) throws Exception {
         if (length > 1024 * 1024) {
             System.out.println("mmap:\t" + length);
