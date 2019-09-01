@@ -10,12 +10,11 @@ import java.util.TreeMap;
 
 public class PartitionIndex {
      static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
-    private static long partitionSize = 1000;
-    private static long tMin = 0, tMax = partitionSize - 1;
+    private static long tMin = 0, tMax = Constants.Partition_Size - 1;
     private static long mStart = 0, mTotal = 0;
     private static long aStartPos = 0, aTotalByte = 0;
     private static int totalTCompressed = 0;
-    private static ByteBuffer tBuffer = ByteBuffer.allocate((int) partitionSize * 100 * 8);
+    private static ByteBuffer tBuffer = ByteBuffer.allocate((int) Constants.Partition_Size * 100 * 8);
     private static long top = (1L << 48) - 1;
 
     private static void compressLong(long a, ByteBuffer aBuffer) {
@@ -44,7 +43,7 @@ public class PartitionIndex {
             tBuffer.flip();
             int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalTCompressed);
             tBuffer.clear();
-            partitionMap.put(tMin / partitionSize, new PartitionInfo(mStart, mTotal, totalTCompressed, aStartPos, aTotalByte));
+            partitionMap.put(tMin / Constants.Partition_Size, new PartitionInfo(mStart, mTotal, totalTCompressed, aStartPos, aTotalByte));
             mStart = mTotal;
             aStartPos = aTotalByte;
             totalTCompressed += byteCompressed;
@@ -56,8 +55,8 @@ public class PartitionIndex {
     public static void buildIndex(long t, long a, ByteBuffer aBuffer) {
         if (!(tMin <= t && t <= tMax)) {
             flushIndex();
-            tMin = (t / partitionSize) * partitionSize;
-            tMax = tMin + partitionSize - 1;
+            tMin = (t / Constants.Partition_Size) * Constants.Partition_Size;
+            tMax = tMin + Constants.Partition_Size - 1;
         }
         tBuffer.putLong(t);
         compressLong(a, aBuffer);
@@ -65,19 +64,19 @@ public class PartitionIndex {
     }
 
     public static long getAStart(long tMin) {
-        return partitionMap.ceilingEntry(tMin / partitionSize).getValue().aStart;
+        return partitionMap.ceilingEntry(tMin / Constants.Partition_Size).getValue().aStart;
     }
 
     public static long getAEnd(long tMax) {
-        return partitionMap.floorEntry(tMax / partitionSize).getValue().aEnd;
+        return partitionMap.floorEntry(tMax / Constants.Partition_Size).getValue().aEnd;
     }
 
     public static long getBodyStart(long tMin) {
-        return partitionMap.ceilingEntry(tMin / partitionSize).getValue().mStart * Constants.Body_Size;
+        return partitionMap.ceilingEntry(tMin / Constants.Partition_Size).getValue().mStart * Constants.Body_Size;
     }
 
     public static long getBodyEnd(long tMax) {
-        return partitionMap.floorEntry(tMax / partitionSize).getValue().mEnd * Constants.Body_Size;
+        return partitionMap.floorEntry(tMax / Constants.Partition_Size).getValue().mEnd * Constants.Body_Size;
     }
 
 //    public static long getAStart(long tMin) {
@@ -105,7 +104,7 @@ public class PartitionIndex {
 //    }
 
     public static long[] getTArray(long tMin, long tMax) {
-        NavigableMap<Long, PartitionInfo> subMap = partitionMap.subMap(tMin / partitionSize, true, tMax / partitionSize, true);
+        NavigableMap<Long, PartitionInfo> subMap = partitionMap.subMap(tMin / Constants.Partition_Size, true, tMax / Constants.Partition_Size, true);
         int count = 0;
         for (PartitionInfo info : subMap.values()) {
             count += (info.mEnd - info.mStart);
