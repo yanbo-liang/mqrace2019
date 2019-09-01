@@ -24,8 +24,8 @@ public class MessageCache {
 
     public static void buildCache() throws Exception {
         long size = 3300000000L;
-        long size1 = Constants.Direct_Memory_Size-Constants.Compressed_Buffer_Size;
-
+        long size1 = 1600000000L;
+        System.out.println("size1"+size1);
         NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.partitionMap;
         Set<Map.Entry<Long, PartitionIndex.PartitionInfo>> entries = partitionMap.entrySet();
         for (Map.Entry<Long, PartitionIndex.PartitionInfo> entry : entries) {
