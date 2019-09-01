@@ -35,6 +35,7 @@ public class MessageReader {
         byteBuffer.limit(length);
 
         long breakpoint = -1;
+        long start = System.currentTimeMillis();
         for (long i = min; i <= max; i++) {
             ByteBuffer byteBuffer1 = MessageCache.map.get(i);
             if (byteBuffer1 != null) {
@@ -47,6 +48,8 @@ public class MessageReader {
                 break;
             }
         }
+        System.out.println("fill :" + (System.currentTimeMillis() - start));
+
         if (breakpoint != -1) {
             PartitionIndex.PartitionInfo partitionInfo = PartitionIndex.partitionMap.get(breakpoint);
             if (partitionInfo == null) {

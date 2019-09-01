@@ -96,10 +96,15 @@ public class DefaultMessageStoreImpl extends MessageStore {
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         try {
             System.out.println("a " + aMin + " " + aMax + " " + tMin + " " + tMax);
+            long startToal = System.currentTimeMillis();
             long start = System.currentTimeMillis();
             long sum = 0, count = 0;
             ByteBuffer aBuffer = MessageReader.readA(tMin, tMax);
+            System.out.println("read a:" + (System.currentTimeMillis() - start));
+
+            start = System.currentTimeMillis();
             LongBuffer longBuffer = PartitionIndex.getTArray(tMin, tMax);
+            System.out.println("read t:" + (System.currentTimeMillis() - start));
 
             long[] tArray = longBuffer.array();
             for (int i = 0; i < longBuffer.limit(); i++) {
@@ -113,7 +118,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
             if (aBuffer instanceof DirectBuffer) {
                 ((DirectBuffer) aBuffer).cleaner().clean();
             }
-            System.out.println("average:" + (System.currentTimeMillis() - start));
+            System.out.println("average:" + (System.currentTimeMillis() - startToal));
             return count == 0 ? 0 : sum / count;
         } catch (Exception e) {
             e.printStackTrace();
