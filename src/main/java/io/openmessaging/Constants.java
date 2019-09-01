@@ -15,7 +15,7 @@ public class Constants {
     public static int Batch_Size = 5000000;
 
     public static long Direct_Memory_Size = 2L * 1024 * 1024 * 1024;
-    public static long Compressed_Buffer_Size = 500 * 1024 * 1024;
+    public static long Compressed_Buffer_Size = 450 * 1024 * 1024;
     public static long Write_Body_Buffer_Size = Body_Size * Batch_Size;
     public static long Write_A_Buffer_Size = (8+1) * Batch_Size;
 }

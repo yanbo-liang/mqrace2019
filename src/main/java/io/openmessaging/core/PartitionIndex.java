@@ -50,7 +50,7 @@ public class PartitionIndex {
             aStartPos = aTotalByte;
             totalTCompressed += byteCompressed;
         }
-        //        System.out.println("totalTCompressed "+ totalTCompressed);
+                System.out.println("totalTCompressed "+ totalTCompressed);
 
     }
 

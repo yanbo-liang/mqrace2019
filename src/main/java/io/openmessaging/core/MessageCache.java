@@ -24,7 +24,7 @@ public class MessageCache {
 
     public static void buildCache() throws Exception {
         long size = 3000000000L;
-        long size1 = 1500000000L;
+        long size1 = 1550000000L;
 
         NavigableMap<Long, PartitionIndex.PartitionInfo> partitionMap = PartitionIndex.partitionMap;
         Set<Map.Entry<Long, PartitionIndex.PartitionInfo>> entries = partitionMap.entrySet();
