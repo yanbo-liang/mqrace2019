@@ -90,26 +90,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
         return new ArrayList<>();
     }
 
-    long readA(ByteBuffer buffer) {
-        byte b1 = buffer.get();
-        byte b2 = buffer.get();
-        byte b3 = buffer.get();
-        byte b4 = buffer.get();
-        byte b5 = buffer.get();
-        byte b6 = buffer.get();
-        long a = ((b1 & 0xffL) << 40) |
-                ((b2 & 0xffL) << 32) |
-                ((b3 & 0xffL) << 24) |
-                ((b4 & 0xffL) << 16) |
-                ((b5 & 0xffL) << 8) |
-                ((b6 & 0xffL));
-        if (a != 0) {
-            return a;
-        } else {
-            return buffer.getLong();
-        }
-    }
-
     @Override
     long getAvgValue(long aMin, long aMax, long tMin, long tMax) {
         try {
@@ -135,5 +115,25 @@ public class DefaultMessageStoreImpl extends MessageStore {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    long readA(ByteBuffer buffer) {
+        byte b1 = buffer.get();
+        byte b2 = buffer.get();
+        byte b3 = buffer.get();
+        byte b4 = buffer.get();
+        byte b5 = buffer.get();
+        byte b6 = buffer.get();
+        long a = ((b1 & 0xffL) << 40) |
+                ((b2 & 0xffL) << 32) |
+                ((b3 & 0xffL) << 24) |
+                ((b4 & 0xffL) << 16) |
+                ((b5 & 0xffL) << 8) |
+                ((b6 & 0xffL));
+        if (a != 0) {
+            return a;
+        } else {
+            return buffer.getLong();
+        }
     }
 }
