@@ -2,6 +2,7 @@ package io.openmessaging;
 
 
 import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 
 public class CompressUtil {
 
@@ -37,19 +38,17 @@ public class CompressUtil {
         }
     }
 
-    public static long[] decompress(ByteBuffer compressed, int start) {
-        long[] uncompressed = new long[compressed.getInt(4 + start)];
-        uncompressed[0] = compressed.getLong(8 + start);
-        long last = uncompressed[0];
-        int i = 1;
+    public static void decompress(ByteBuffer compressed, LongBuffer uncompressed, int start) {
+        long base = compressed.getLong(8 + start);
+        uncompressed.put(base);
+        long last = base;
         for (int pointer = 128; pointer < compressed.getInt(start); pointer++) {
             if (increaseBit(compressed, start, pointer)) {
                 last++;
                 continue;
             }
-            uncompressed[i++] = last;
+            uncompressed.put(last);
         }
-        return uncompressed;
     }
 
 

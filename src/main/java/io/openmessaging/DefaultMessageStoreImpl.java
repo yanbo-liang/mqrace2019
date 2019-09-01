@@ -7,6 +7,7 @@ import io.openmessaging.core.PartitionIndex;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,9 +64,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long start = System.currentTimeMillis();
             ByteBuffer aBuffer = MessageReader.readA(tMin, tMax);
             ByteBuffer bodyBuffer = MessageReader.readBody(null, tMin, tMax);
-            long[] tArray = PartitionIndex.getTArray(tMin, tMax);
+            LongBuffer longBuffer = PartitionIndex.getTArray(tMin, tMax);
+            long[] tArray = longBuffer.array();
             List<Message> messageList = new ArrayList<>();
-            for (int i = 0; i < tArray.length; i++) {
+            for (int i = 0; i < longBuffer.limit(); i++) {
                 long t = tArray[i];
                 long a = readA(aBuffer);
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {
@@ -97,8 +99,10 @@ public class DefaultMessageStoreImpl extends MessageStore {
             long start = System.currentTimeMillis();
             long sum = 0, count = 0;
             ByteBuffer aBuffer = MessageReader.readA(tMin, tMax);
-            long[] tArray = PartitionIndex.getTArray(tMin, tMax);
-            for (int i = 0; i < tArray.length; i++) {
+            LongBuffer longBuffer = PartitionIndex.getTArray(tMin, tMax);
+
+            long[] tArray = longBuffer.array();
+            for (int i = 0; i < longBuffer.limit(); i++) {
                 long t = tArray[i];
                 long a = readA(aBuffer);
                 if (tMin <= t && t <= tMax && aMin <= a && a <= aMax) {

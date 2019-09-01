@@ -28,9 +28,9 @@ public class DemoTester {
         //查询的线程数量
         int checkTsNum = 10;
         // 每次查询消息的最大跨度
-        int maxMsgCheckSize = 100000;
+        int maxMsgCheckSize = 50000;
         // 每次查询求平均的最大跨度
-        int maxValueCheckSize = 100000;
+        int maxValueCheckSize = 50000;
 
         MessageStore messageStore = null;
 

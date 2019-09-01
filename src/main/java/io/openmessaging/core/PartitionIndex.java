@@ -5,17 +5,19 @@ import io.openmessaging.Constants;
 import io.openmessaging.DirectBufferManager;
 
 import java.nio.ByteBuffer;
+import java.nio.LongBuffer;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public class PartitionIndex {
-     static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
+    static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
     private static long tMin = 0, tMax = Constants.Partition_Size - 1;
     private static long mStart = 0, mTotal = 0;
     private static long aStartPos = 0, aTotalByte = 0;
     private static int totalTCompressed = 0;
     private static ByteBuffer tBuffer = ByteBuffer.allocate((int) Constants.Partition_Size * 100 * 8);
     private static long top = (1L << 48) - 1;
+    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(100000));
 
     private static void compressLong(long a, ByteBuffer aBuffer) {
         if (a <= top) {
@@ -48,7 +50,7 @@ public class PartitionIndex {
             aStartPos = aTotalByte;
             totalTCompressed += byteCompressed;
         }
-                System.out.println("totalTCompressed "+ totalTCompressed);
+//        System.out.println("totalTCompressed " + totalTCompressed);
 
     }
 
@@ -103,20 +105,16 @@ public class PartitionIndex {
 //        return (partitionInfo.mEnd - i) * 8;
 //    }
 
-    public static long[] getTArray(long tMin, long tMax) {
+    public static LongBuffer getTArray(long tMin, long tMax) {
         NavigableMap<Long, PartitionInfo> subMap = partitionMap.subMap(tMin / Constants.Partition_Size, true, tMax / Constants.Partition_Size, true);
-        int count = 0;
+
+        LongBuffer longBuffer = localLongBuffer.get();
+        longBuffer.clear();
         for (PartitionInfo info : subMap.values()) {
-            count += (info.mEnd - info.mStart);
+            CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), longBuffer, info.cStart);
         }
-        long[] tArray = new long[count];
-        int index = 0;
-        for (PartitionInfo info : subMap.values()) {
-            long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), info.cStart);
-            System.arraycopy(uncompressed, 0, tArray, index, uncompressed.length);
-            index += uncompressed.length;
-        }
-        return tArray;
+        longBuffer.flip();
+        return longBuffer;
     }
 
     public static class PartitionInfo {

@@ -13,9 +13,11 @@ public class Constants {
     public static int Thread_Count = 12;
     public static int Body_Size = Message_Size - 16;
     public static int Batch_Size = 5000000;
+    public static long Partition_Size = 1000;
+
 
     public static long Direct_Memory_Size = 2L * 1024 * 1024 * 1024;
-    public static long Compressed_Buffer_Size = 450 * 1024 * 1024;
+    public static long Compressed_Buffer_Size = 400 * 1024 * 1024;
     public static long Write_Body_Buffer_Size = Body_Size * Batch_Size;
     public static long Write_A_Buffer_Size = (8+1) * Batch_Size;
 }
