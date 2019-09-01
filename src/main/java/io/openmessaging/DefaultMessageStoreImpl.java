@@ -16,9 +16,6 @@ public class DefaultMessageStoreImpl extends MessageStore {
     private volatile boolean readyForRead = false;
     private long initStart;
 
-    private byte[] a;
-    private byte[] b;
-
     public DefaultMessageStoreImpl() {
         initStart = System.currentTimeMillis();
     }
@@ -37,10 +34,9 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
-            long heapSize = Runtime.getRuntime().totalMemory();
+            long heapSize = Runtime.getRuntime().freeMemory();
             System.out.println("heapSize " + heapSize);
             System.out.println(System.currentTimeMillis() - initStart);
-//            System.exit(1);
             System.out.println("g " + aMin + " " + aMax + " " + tMin + " " + tMax);
             if (!getStarted.get()) {
                 if (getStarted.compareAndSet(false, true)) {

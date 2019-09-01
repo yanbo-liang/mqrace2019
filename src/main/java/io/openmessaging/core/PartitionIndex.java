@@ -50,6 +50,8 @@ public class PartitionIndex {
             aStartPos = aTotalByte;
             totalTCompressed += byteCompressed;
         }
+        //        System.out.println("totalTCompressed "+ totalTCompressed);
+
     }
 
     public static void buildIndex(long t, long a, ByteBuffer aBuffer) {
@@ -61,7 +63,6 @@ public class PartitionIndex {
         tBuffer.putLong(t);
         compressLong(a, aBuffer);
         mTotal += 1;
-//        System.out.println("totalTCompressed "+ totalTCompressed);
     }
 
     public static long getAStart(long tMin) {
