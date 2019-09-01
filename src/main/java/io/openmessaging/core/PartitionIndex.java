@@ -5,7 +5,6 @@ import io.openmessaging.Constants;
 import io.openmessaging.DirectBufferManager;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 

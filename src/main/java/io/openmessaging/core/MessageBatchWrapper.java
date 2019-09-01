@@ -3,8 +3,6 @@ package io.openmessaging.core;
 import io.openmessaging.Constants;
 import io.openmessaging.Message;
 
-import java.nio.ByteBuffer;
-
 class MessageBatchWrapper {
     long[] tArray;
     long[] aArray;

@@ -1,22 +1,18 @@
 package io.openmessaging.core;
 
 import io.openmessaging.Constants;
-import io.openmessaging.Message;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.CompletionHandler;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Collection;
-import java.util.NavigableMap;
 
 public class MessageReader {
     private static FileChannel aChannel;
     private static FileChannel bodyChannel;
-    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4*1024 * 1024));
-    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4*1024 * 1024));
+    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4 * 1024 * 1024));
+    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4 * 1024 * 1024));
 
     static {
         try {
@@ -27,7 +23,7 @@ public class MessageReader {
         }
     }
 
-    public static ByteBuffer readA(ByteBuffer buffer, long tMin, long tMax) throws Exception {
+    public static ByteBuffer readA(long tMin, long tMax) throws Exception {
         long min = tMin / 1000;
         long max = tMax / 1000;
         ByteBuffer byteBuffer = aLocalBuffer.get();
@@ -53,13 +49,13 @@ public class MessageReader {
         }
         if (breakpoint != -1) {
             PartitionIndex.PartitionInfo partitionInfo = PartitionIndex.partitionMap.get(breakpoint);
-            if (partitionInfo==null){
+            if (partitionInfo == null) {
                 byteBuffer.flip();
                 return byteBuffer;
             }
             messageStart = partitionInfo.aStart;
             adaptiveRead(byteBuffer, aChannel, messageStart);
-        }else{
+        } else {
             byteBuffer.flip();
         }
         return byteBuffer;
