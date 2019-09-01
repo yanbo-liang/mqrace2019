@@ -4,8 +4,10 @@ import io.openmessaging.core.MessageCache;
 import io.openmessaging.core.MessagePut;
 import io.openmessaging.core.MessageReader;
 import io.openmessaging.core.PartitionIndex;
+import sun.misc.VM;
 import sun.nio.ch.DirectBuffer;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +25,22 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
     @Override
     void put(Message message) {
+        try {
+//            Class<?> c = Class.forName("java.nio.Bits");
+//            Field maxMemory = c.getDeclaredField("maxMemory");
+//            maxMemory.setAccessible(true);
+//            Field reservedMemory = c.getDeclaredField("reservedMemory");
+//            reservedMemory.setAccessible(true);
+//            Long maxMemoryValue = (Long)maxMemory.get(null);
+//            Long reservedMemoryValue = (Long)reservedMemory.get(null);
+
+            System.out.println(VM.maxDirectMemory());
+System.exit(1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
         try {
             MessagePut.put(message);
         } catch (Exception e) {
