@@ -6,6 +6,7 @@ import io.openmessaging.unsafe.UnsafeWrapper;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
+import java.util.zip.Deflater;
 
 class MessageWriterTask implements Runnable {
     private BlockingQueue<MessageBatchWrapper> blockingQueue;
@@ -74,8 +75,8 @@ class MessageWriterTask implements Runnable {
 
                 System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
                 if (isEnd) {
-                    sorted=null;
-                    unsorted=null;
+                    sorted = null;
+                    unsorted = null;
                     synchronized (MessageWriter.class) {
                         MessageWriter.class.notify();
                     }
@@ -96,9 +97,23 @@ class MessageWriterTask implements Runnable {
         long[] tArray = sorted.tArray;
         long[] aArray = sorted.aArray;
         byte[] bodyArray = sorted.bodyArray;
+        long[] sort = new long[3000];
+        System.arraycopy(aArray, start, sort, 0, 3000);
 
+        ByteBuffer sortBuffer = ByteBuffer.allocate(4000 * 8);
+        for (int i = 0; i < 3000; i++) {
+            PartitionIndex.compressLong(sort[i], sortBuffer);
+        }
+        sortBuffer.flip();
+        Deflater deflater = new Deflater(1);
+        deflater.setInput(sortBuffer.array(), 0, sortBuffer.limit());
+        deflater.finish();
+        ByteBuffer compressed = ByteBuffer.allocate(4000 * 8);
+
+        int compressedSize = deflater.deflate(compressed.array());
+        System.out.println("compressedSize" + compressedSize);
         for (int i = start; i < limit; i += 1) {
-            PartitionIndex.buildIndex(tArray[i],aArray[i],aBuffer);
+            PartitionIndex.buildIndex(tArray[i], aArray[i], aBuffer);
         }
 
         int length = limit - start;

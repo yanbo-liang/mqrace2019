@@ -19,7 +19,7 @@ public class PartitionIndex {
     private static long top = (1L << 48) - 1;
     private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(100000));
 
-    private static void compressLong(long a, ByteBuffer aBuffer) {
+    public static void compressLong(long a, ByteBuffer aBuffer) {
         if (a <= top) {
             aBuffer.put((byte) (a >> 40));
             aBuffer.put((byte) (a >> 32));
