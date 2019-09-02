@@ -5,6 +5,7 @@ import io.openmessaging.DirectBufferManager;
 import io.openmessaging.unsafe.UnsafeWrapper;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.zip.Deflater;
 
@@ -99,7 +100,7 @@ class MessageWriterTask implements Runnable {
         byte[] bodyArray = sorted.bodyArray;
         long[] sort = new long[3000];
         System.arraycopy(aArray, start, sort, 0, 3000);
-
+        Arrays.sort(sort);
         ByteBuffer sortBuffer = ByteBuffer.allocate(4000 * 8);
         for (int i = 0; i < 3000; i++) {
             PartitionIndex.compressLong(sort[i], sortBuffer);
