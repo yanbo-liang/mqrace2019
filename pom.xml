@@ -15,12 +15,6 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.6</version>
         </dependency>
-        <dependency>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-            <version>1.6.0</version>
-        </dependency>
-
     </dependencies>
 
     <build>
