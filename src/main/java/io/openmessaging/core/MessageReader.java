@@ -29,6 +29,7 @@ public class MessageReader {
         ByteBuffer byteBuffer = aLocalBuffer.get();
 
         long messageStart = PartitionIndex.getAStart(tMin);
+        System.out.println("messageStart "+messageStart);
         long messageEnd = PartitionIndex.getAEnd(tMax);
         int length = (int) (messageEnd - messageStart);
         byteBuffer.clear();
