@@ -3,6 +3,7 @@ package io.openmessaging.core;
 import io.openmessaging.Constants;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -13,7 +14,24 @@ public class MessageReader {
     private static FileChannel bodyChannel;
     private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4 * 1024 * 1024));
     private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4 * 1024 * 1024));
+    private static ThreadLocal<RandomAccessFile> bodylocalFile = ThreadLocal.withInitial(() -> {
+        try {
+            return new RandomAccessFile(Constants.Body_Path, "r");
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    });
+    private static ThreadLocal<RandomAccessFile> alocalFile = ThreadLocal.withInitial(() -> {
+        try {
+            return new RandomAccessFile(Constants.A_Path, "r");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    });
     static {
         try {
             aChannel = FileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.READ);
@@ -29,7 +47,7 @@ public class MessageReader {
         ByteBuffer byteBuffer = aLocalBuffer.get();
 
         long messageStart = PartitionIndex.getAStart(tMin);
-        System.out.println("messageStart "+messageStart);
+        System.out.println("messageStart " + messageStart);
         long messageEnd = PartitionIndex.getAEnd(tMax);
         int length = (int) (messageEnd - messageStart);
         byteBuffer.clear();
@@ -58,7 +76,7 @@ public class MessageReader {
                 return byteBuffer;
             }
             messageStart = partitionInfo.aStart;
-            adaptiveRead(byteBuffer, aChannel, messageStart);
+            adaptiveRead(byteBuffer, alocalFile.get(), messageStart);
         } else {
             byteBuffer.flip();
         }
@@ -72,20 +90,23 @@ public class MessageReader {
         ByteBuffer byteBuffer = bodyLocalBuffer.get();
         byteBuffer.clear();
         byteBuffer.limit((int) (messageEnd - messageStart));
-        return adaptiveRead(byteBuffer, bodyChannel, messageStart);
+
+        return adaptiveRead(byteBuffer, bodylocalFile.get(), messageStart);
 
     }
 
     //private static Semaphore semaphore = new Semaphore(1);
-    private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, FileChannel channel, long start) throws Exception {
+    private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, RandomAccessFile randomAccessFile, long start) throws Exception {
 //        if (length > 1024 * 1024) {
 //            System.out.println("mmap:\t" + length);
 //            return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
 //        } else {
 //            semaphore.acquire();
         long readStart = System.currentTimeMillis();
-
-        channel.read(byteBuffer, start);
+        randomAccessFile.seek(start);
+        randomAccessFile.read(byteBuffer.array(), 0, byteBuffer.limit());
+//        channel.read(byteBuffer, start);
+        byteBuffer.position(byteBuffer.limit());
         byteBuffer.flip();
         System.out.println("rt:\t" + (System.currentTimeMillis() - readStart) + "\trl:\t");
 //            semaphore.release();
