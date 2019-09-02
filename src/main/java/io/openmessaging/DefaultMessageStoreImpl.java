@@ -48,6 +48,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
+            System.exit(1);
             long heapSize = Runtime.getRuntime().freeMemory();
             System.out.println("heapSize " + heapSize);
             System.out.println(System.currentTimeMillis() - initStart);
