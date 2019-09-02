@@ -10,7 +10,9 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DefaultMessageStoreImpl extends MessageStore {
     private AtomicBoolean getStarted = new AtomicBoolean(false);
@@ -21,20 +23,33 @@ public class DefaultMessageStoreImpl extends MessageStore {
         initStart = System.currentTimeMillis();
     }
 
+    ConcurrentHashMap<Integer, AtomicLong> map = new ConcurrentHashMap<>();
 
     @Override
     void put(Message message) {
-        try {
-            MessagePut.put(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
+
+        int i = Long.numberOfLeadingZeros(message.getA());
+
+
+        AtomicLong atomicLong = map.get(i);
+        if (atomicLong == null) {
+            atomicLong = new AtomicLong(0);
+            map.put(i,atomicLong);
         }
+        atomicLong.incrementAndGet();
+//        try {
+//            MessagePut.put(message);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.exit(1);
+//        }
     }
 
     @Override
     List<Message> getMessage(long aMin, long aMax, long tMin, long tMax) {
         try {
+            System.out.println(map);
+            System.exit(1);
             long heapSize = Runtime.getRuntime().freeMemory();
             System.out.println("heapSize " + heapSize);
             System.out.println(System.currentTimeMillis() - initStart);
