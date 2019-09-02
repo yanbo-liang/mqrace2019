@@ -104,9 +104,8 @@ class MessageWriterTask implements Runnable {
         ByteBuffer sortBuffer = ByteBuffer.allocate(4000 * 8);
         for (int i = 0; i < 3000; i++) {
             System.out.println(sort[i]);
-//            PartitionIndex.compressLong(sort[i], sortBuffer);
+            PartitionIndex.compressLong(sort[i], sortBuffer);
         }
-        System.exit(-1);
         sortBuffer.flip();
         Deflater deflater = new Deflater(1);
         deflater.setInput(sortBuffer.array(), 0, sortBuffer.limit());
