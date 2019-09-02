@@ -3,6 +3,8 @@ package io.openmessaging.core;
 import io.openmessaging.Constants;
 import io.openmessaging.DirectBufferManager;
 import io.openmessaging.unsafe.UnsafeWrapper;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -103,17 +105,17 @@ class MessageWriterTask implements Runnable {
         Arrays.sort(sort);
         ByteBuffer sortBuffer = ByteBuffer.allocate(4000 * 8);
         for (int i = 0; i < 3000; i++) {
-            System.out.println(sort[i]);
             PartitionIndex.compressLong(sort[i], sortBuffer);
         }
         sortBuffer.flip();
-        Deflater deflater = new Deflater(1);
-        deflater.setInput(sortBuffer.array(), 0, sortBuffer.limit());
-        deflater.finish();
-        ByteBuffer compressed = ByteBuffer.allocate(4000 * 8);
 
-        int compressedSize = deflater.deflate(compressed.array());
-        System.out.println("compressedSize" + compressedSize);
+        LZ4Factory factory = LZ4Factory.unsafeInstance();
+        LZ4Compressor compressor = factory.highCompressor();
+        int maxCompressedLength = compressor.maxCompressedLength(sortBuffer.limit());
+        byte[] compressed = new byte[maxCompressedLength];
+        int compressedLength = compressor.compress(sortBuffer.array(), 0, sortBuffer.limit(), compressed, 0, maxCompressedLength);
+        System.out.println(System.currentTimeMillis()-start);
+        System.out.println("compressedSize" + compressedLength);
         for (int i = start; i < limit; i += 1) {
             PartitionIndex.buildIndex(tArray[i], aArray[i], aBuffer);
         }
