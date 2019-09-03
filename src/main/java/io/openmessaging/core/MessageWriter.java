@@ -68,7 +68,7 @@ class MessageWriter {
 
         bodyChannel.write(bodyBuffer, bodyTotalByteWritten, bodyBuffer, new WriteBodyHandler());
         aChannel.write(aBuffer, aTotalByteWritten, aBuffer, new WriteAHandler());
-        sortedAChannel.write(sortedABuffer, sortedATotalByteWritten, aBuffer, new WriteSortedAHandler());
+        sortedAChannel.write(sortedABuffer, sortedATotalByteWritten, sortedABuffer, new WriteSortedAHandler());
 
         bodyTotalByteWritten += bodyBuffer.limit();
         aTotalByteWritten += aBuffer.limit();
