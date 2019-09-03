@@ -113,15 +113,15 @@ public class IOTest {
 //
 //
 //                long c = 0;
-//                while (map.position() < map.limit()) {
-//                    map.get();
+//                while (aPartitionMap.position() < aPartitionMap.limit()) {
+//                    aPartitionMap.get();
 //                    c++;
 //                }
-//                map.isLoaded()
+//                aPartitionMap.isLoaded()
 //                fileChannel.read(buffer, 0);
 
 //                fileChannel.close();
-//                ((DirectBuffer)map).cleaner().clean();
+//                ((DirectBuffer)aPartitionMap).cleaner().clean();
 //                System.out.println(System.currentTimeMillis() - start);
 //            Thread.sleep(1000000);
 //            }

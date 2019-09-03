@@ -5,6 +5,7 @@ import io.openmessaging.DirectBufferManager;
 import io.openmessaging.unsafe.UnsafeWrapper;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 
 class MessageWriterTask implements Runnable {
@@ -74,8 +75,8 @@ class MessageWriterTask implements Runnable {
 
                 System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
                 if (isEnd) {
-                    sorted=null;
-                    unsorted=null;
+                    sorted = null;
+                    unsorted = null;
                     synchronized (MessageWriter.class) {
                         MessageWriter.class.notify();
                     }
@@ -90,29 +91,35 @@ class MessageWriterTask implements Runnable {
     private void processBatch(int start, int limit, boolean waitComplete) throws Exception {
         long startTime = System.currentTimeMillis();
 
+        int length = limit - start;
+
         ByteBuffer bodyBuffer = DirectBufferManager.borrowBodyBuffer();
         ByteBuffer aBuffer = DirectBufferManager.borrowABuffer();
+        ByteBuffer sortedABuffer = DirectBufferManager.borrowSortedABuffer();
 
         long[] tArray = sorted.tArray;
         long[] aArray = sorted.aArray;
         byte[] bodyArray = sorted.bodyArray;
 
+        long[] sortedAArray = new long[length];
+        System.arraycopy(aArray, start, sortedAArray, 0, length);
+        Arrays.sort(sortedAArray);
+
         for (int i = start; i < limit; i += 1) {
-            PartitionIndex.buildIndex(tArray[i],aArray[i],aBuffer);
+            PartitionIndex.buildIndex(tArray[i], sortedAArray[i], sortedABuffer);
+            aBuffer.putLong(aArray[i]);
         }
 
-        int length = limit - start;
         UnsafeWrapper.unsafeCopy(bodyArray, start, bodyBuffer, 0, length);
-//        UnsafeWrapper.unsafeCopyA(aArray, start, aBuffer, 0, length);
-
         bodyBuffer.position(length * Constants.Body_Size);
 
         bodyBuffer.flip();
         aBuffer.flip();
+        sortedABuffer.flip();
 
         System.out.println("fill time " + (System.currentTimeMillis() - startTime));
 
-        MessageWriter.asyncWrite(bodyBuffer, aBuffer);
+        MessageWriter.asyncWrite(bodyBuffer, aBuffer, sortedABuffer);
         if (waitComplete) {
             MessageWriter.waitAsyncWriteComplete();
         }
