@@ -105,8 +105,8 @@ class MessageWriterTask implements Runnable {
         System.arraycopy(aArray, start, sortedAArray, 0, length);
         Arrays.sort(sortedAArray);
 
-        for (int i = start; i < limit; i += 1) {
-            PartitionIndex.buildIndex(tArray[i], sortedAArray[i], sortedABuffer);
+        for (int i = 0; i < length; i += 1) {
+            PartitionIndex.buildIndex(tArray[i + start], sortedAArray[i], sortedABuffer);
             aBuffer.putLong(aArray[i]);
         }
 
