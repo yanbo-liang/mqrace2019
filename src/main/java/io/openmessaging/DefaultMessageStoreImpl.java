@@ -1,6 +1,7 @@
 package io.openmessaging;
 
 import io.openmessaging.core.MessagePut;
+import io.openmessaging.core.MessageReadResult;
 import io.openmessaging.core.MessageReader;
 import io.openmessaging.core.PartitionIndex;
 import sun.nio.ch.DirectBuffer;
@@ -71,7 +72,7 @@ public class DefaultMessageStoreImpl extends MessageStore {
                 }
             }
             long start = System.currentTimeMillis();
-            ByteBuffer aBuffer = MessageReader.readA( tMin, tMax);
+            ByteBuffer aBuffer = MessageReader.readA(tMin, tMax);
             ByteBuffer bodyBuffer = MessageReader.readBody(tMin, tMax);
             LongBuffer longBuffer = PartitionIndex.getTArray(tMin, tMax);
             long[] tArray = longBuffer.array();
@@ -103,12 +104,23 @@ public class DefaultMessageStoreImpl extends MessageStore {
 
             long sum = 0, count = 0;
 
-            ByteBuffer aBuffer = MessageReader.readAFast(aMin, aMax, tMin, tMax);
-
+            MessageReadResult readResult = MessageReader.readAFast(aMin, aMax, tMin, tMax);
+            ByteBuffer aBuffer = readResult.buffer;
             System.out.println("read a:" + (System.currentTimeMillis() - start));
 
             while (aBuffer.hasRemaining()) {
-                long a = readA(aBuffer);
+                long a=0;
+                if (aBuffer.position() >= readResult.mark) {
+                    try {
+                        a = readA(aBuffer);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    a = aBuffer.getLong();
+
+                }
                 if (aMin <= a && a <= aMax) {
                     sum += a;
                     count += 1;

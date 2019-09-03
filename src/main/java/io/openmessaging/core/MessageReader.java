@@ -1,6 +1,7 @@
 package io.openmessaging.core;
 
 import io.openmessaging.Constants;
+import io.openmessaging.Message;
 import io.openmessaging.core.partition.APartition;
 import io.openmessaging.core.partition.MessagePartition;
 
@@ -44,21 +45,36 @@ public class MessageReader {
 
     }
 
-    public static ByteBuffer readAFast(long aMin, long aMax, long tMin, long tMax) throws Exception {
+    public static MessageReadResult readAFast(long aMin, long aMax, long tMin, long tMax) throws Exception {
         ByteBuffer buffer = aLocalBuffer.get();
         buffer.position(0);
         buffer.limit(0);
+        int mark = Integer.MAX_VALUE;
         NavigableMap<Long, MessagePartition> messagePartitionMap = PartitionIndex.getMessagePartitions(tMin, tMax);
-        long aStart = PartitionIndex.getAStartInFirstPartition(messagePartitionMap.firstEntry().getValue(), tMin);
-        long aEnd = PartitionIndex.getAEndInLastPartition(messagePartitionMap.lastEntry().getValue(), tMax);
-        read(buffer, aChannel, aStart, aEnd - aStart);
-        buffer.mark();
-        if (messagePartitionMap.size() > 2) {
+        if (messagePartitionMap.size() <= 2) {
+            MessagePartition firstPartition = messagePartitionMap.firstEntry().getValue();
+            long aStart = PartitionIndex.getAStartInFirstPartition(firstPartition, tMin);
+            MessagePartition lastPartition = messagePartitionMap.lastEntry().getValue();
+            long aEnd = PartitionIndex.getAEndInLastPartition(lastPartition, tMax);
+            read(buffer, aChannel, aStart, aEnd - aStart);
+        } else {
+            MessagePartition firstPartition = messagePartitionMap.firstEntry().getValue();
+            long aFirstStart = PartitionIndex.getAStartInFirstPartition(firstPartition, tMin);
+            long aFirstEnd = firstPartition.mEnd*8;
+            read(buffer, aChannel, aFirstStart, aFirstEnd - aFirstStart);
+
+            MessagePartition lastPartition = messagePartitionMap.lastEntry().getValue();
+            long aLastStart = lastPartition.mStart*8;
+            long aLastEnd = PartitionIndex.getAEndInLastPartition(lastPartition, tMax);
+            read(buffer, aChannel, aLastStart, aLastEnd - aLastStart);
+            mark = buffer.position();
             NavigableMap<Long, MessagePartition> middlePartitionMap = messagePartitionMap.subMap(messagePartitionMap.firstKey(), false, messagePartitionMap.lastKey(), false);
             readAFromMiddlePartition(buffer, middlePartitionMap, aMin, aMax);
+
         }
+
         buffer.flip();
-        return buffer;
+        return new MessageReadResult(buffer, mark);
     }
 //        int length = (int) (messageEnd - messageStart);
 //        byteBuffer.clear();
