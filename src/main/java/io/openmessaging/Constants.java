@@ -2,15 +2,15 @@ package io.openmessaging;
 
 public class Constants {
 
-    public static int Message_Size = 24;
-    public static String Body_Path = "/Users/yanbo.liang/test/body";
-    public static String A_Path = "/Users/yanbo.liang/test/a";
-    public static String Sorted_A_Path = "/Users/yanbo.liang/test/sorted_a";
+//    public static int Message_Size = 24;
+//    public static String Body_Path = "/Users/yanbo.liang/test/body";
+//    public static String A_Path = "/Users/yanbo.liang/test/a";
+//    public static String Sorted_A_Path = "/Users/yanbo.liang/test/sorted_a";
 
-//    public static int Message_Size = 50;
-//    public static String Body_Path = "/alidata1/race2019/data/body";
-//    public static String A_Path = "/alidata1/race2019/data/a";
-//    public static String Sorted_A_Path = "/alidata1/race2019/data/sorted_a";
+    public static int Message_Size = 50;
+    public static String Body_Path = "/alidata1/race2019/data/body";
+    public static String A_Path = "/alidata1/race2019/data/a";
+    public static String Sorted_A_Path = "/alidata1/race2019/data/sorted_a";
 
     public static int Thread_Count = 12;
     public static int Body_Size = Message_Size - 16;
