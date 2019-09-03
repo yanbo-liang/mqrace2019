@@ -18,7 +18,7 @@ public class PartitionIndex {
     private static long mStart = 0, mTotal = 0;
     private static int totalTCompressed = 0;
     private static ByteBuffer tBuffer = ByteBuffer.allocate((int) Constants.Partition_Size * 100 * 8);
-    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(100000));
+    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(500000));
 
 
     private static long aStart = 0, aTotal = 0;
@@ -30,6 +30,9 @@ public class PartitionIndex {
 
     public static void flushIndex() {
         flushAIndex();
+        aPartitionCount = 10;
+        aMin = 0;
+        aMax = aPartitionSize - 1;
         if (mStart != mTotal) {
             tBuffer.flip();
             int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalTCompressed);

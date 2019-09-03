@@ -108,7 +108,7 @@ class MessageWriterTask implements Runnable {
 
         for (int i = 0; i < length; i += 1) {
             PartitionIndex.buildIndex(tArray[i + start], sortedAArray[i], sortedABuffer);
-            aBuffer.putLong(aArray[i]);
+            aBuffer.putLong(aArray[i + start]);
         }
 
         UnsafeWrapper.unsafeCopy(bodyArray, start, bodyBuffer, 0, length);

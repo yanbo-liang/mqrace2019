@@ -75,7 +75,9 @@ public class DefaultMessageStoreImpl extends MessageStore {
             ByteBuffer aBuffer = MessageReader.readA(tMin, tMax);
             ByteBuffer bodyBuffer = MessageReader.readBody(tMin, tMax);
             LongBuffer longBuffer = PartitionIndex.getTArray(tMin, tMax);
+
             long[] tArray = longBuffer.array();
+
             List<Message> messageList = new ArrayList<>();
             for (int i = 0; i < longBuffer.limit(); i++) {
                 long t = tArray[i];

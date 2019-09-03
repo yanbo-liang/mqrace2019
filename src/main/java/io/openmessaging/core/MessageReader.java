@@ -16,8 +16,8 @@ import java.util.Set;
 
 public class MessageReader {
     private static FileChannel aChannel, sortedAChannel, bodyChannel;
-    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4 * 1024 * 1024));
-    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(4 * 1024 * 1024));
+    private static ThreadLocal<ByteBuffer> aLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(10 * 1024 * 1024));
+    private static ThreadLocal<ByteBuffer> bodyLocalBuffer = ThreadLocal.withInitial(() -> ByteBuffer.allocate(10 * 1024 * 1024));
 
     static {
         try {
@@ -38,9 +38,29 @@ public class MessageReader {
         Set<Map.Entry<Long, MessagePartition>> entries = middlePartitionMap.entrySet();
         for (Map.Entry<Long, MessagePartition> entry : entries) {
             NavigableMap<Long, APartition> aPartitionMap = entry.getValue().aPartitionMap;
-            long aStart = aPartitionMap.floorEntry(aMin).getValue().aStart;
-            long aEnd = aPartitionMap.floorEntry(aMax).getValue().aEnd;
+
+            long aStart=0;
+            long aEnd=0;
+
+            Map.Entry<Long, APartition> minFloorEntry = aPartitionMap.floorEntry(aMin);
+            Map.Entry<Long, APartition> maxFloorEntry = aPartitionMap.floorEntry(aMax);
+
+            if (minFloorEntry == null && maxFloorEntry == null) {
+                return;
+            } else if (minFloorEntry != null && maxFloorEntry != null) {
+                aStart = minFloorEntry.getValue().aStart;
+                aEnd = maxFloorEntry.getValue().aEnd;
+            } else if (minFloorEntry != null) {
+                aStart = minFloorEntry.getValue().aStart;
+                aEnd = minFloorEntry.getValue().aEnd;
+            } else if (maxFloorEntry != null) {
+                aStart = maxFloorEntry.getValue().aStart;
+                aEnd = maxFloorEntry.getValue().aEnd;
+            }
+
+
             read(buffer, sortedAChannel, aStart, aEnd - aStart);
+
         }
 
     }
@@ -60,11 +80,11 @@ public class MessageReader {
         } else {
             MessagePartition firstPartition = messagePartitionMap.firstEntry().getValue();
             long aFirstStart = PartitionIndex.getAStartInFirstPartition(firstPartition, tMin);
-            long aFirstEnd = firstPartition.mEnd*8;
+            long aFirstEnd = firstPartition.mEnd * 8;
             read(buffer, aChannel, aFirstStart, aFirstEnd - aFirstStart);
 
             MessagePartition lastPartition = messagePartitionMap.lastEntry().getValue();
-            long aLastStart = lastPartition.mStart*8;
+            long aLastStart = lastPartition.mStart * 8;
             long aLastEnd = PartitionIndex.getAEndInLastPartition(lastPartition, tMax);
             read(buffer, aChannel, aLastStart, aLastEnd - aLastStart);
             mark = buffer.position();
