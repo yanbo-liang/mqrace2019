@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
 public class MessageReader {
     private static FileChannel aChannel;
@@ -70,12 +71,16 @@ public class MessageReader {
         System.out.println("fill :" + (System.currentTimeMillis() - start));
 
         if (breakpoint != -1) {
-            PartitionIndex.PartitionInfo partitionInfo = PartitionIndex.partitionMap.get(breakpoint);
-            if (partitionInfo == null) {
+            Map.Entry<Long, PartitionIndex.PartitionInfo> entry = PartitionIndex.partitionMap.ceilingEntry(breakpoint);
+            if (entry != null) {
+                PartitionIndex.PartitionInfo partitionInfo = entry.getValue();
+                messageStart = partitionInfo.aStart;
+
+            }else{
                 byteBuffer.flip();
                 return byteBuffer;
             }
-            messageStart = partitionInfo.aStart;
+
             adaptiveRead(byteBuffer, alocalFile.get(), messageStart);
         } else {
             byteBuffer.flip();
@@ -96,7 +101,7 @@ public class MessageReader {
     }
 
     //private static Semaphore semaphore = new Semaphore(1);
-    private synchronized static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, RandomAccessFile randomAccessFile, long start) throws Exception {
+    private  static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, RandomAccessFile randomAccessFile, long start) throws Exception {
 //        if (length > 1024 * 1024) {
 //            System.out.println("mmap:\t" + length);
 //            return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
