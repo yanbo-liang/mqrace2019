@@ -96,7 +96,7 @@ public class MessageReader {
     }
 
     //private static Semaphore semaphore = new Semaphore(1);
-    private static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, RandomAccessFile randomAccessFile, long start) throws Exception {
+    private synchronized static ByteBuffer adaptiveRead(ByteBuffer byteBuffer, RandomAccessFile randomAccessFile, long start) throws Exception {
 //        if (length > 1024 * 1024) {
 //            System.out.println("mmap:\t" + length);
 //            return channel.map(FileChannel.MapMode.READ_ONLY, start, length);
