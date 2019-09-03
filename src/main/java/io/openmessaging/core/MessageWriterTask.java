@@ -85,6 +85,7 @@ class MessageWriterTask implements Runnable {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            System.exit(1);
         }
     }
 
