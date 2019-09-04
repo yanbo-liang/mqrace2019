@@ -17,7 +17,7 @@ public class PartitionIndex {
     private static int totalTCompressed = 0;
     private static ByteBuffer tBuffer = ByteBuffer.allocate((int) Constants.Partition_Size * 100 * 8);
     private static long top = (1L << 48) - 1;
-    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(100000));
+    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(80000));
 
     private static void compressLong(long a, ByteBuffer aBuffer) {
         if (a <= top) {

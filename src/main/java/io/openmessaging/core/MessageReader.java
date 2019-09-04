@@ -29,7 +29,7 @@ public class MessageReader {
         ByteBuffer byteBuffer = aLocalBuffer.get();
 
         long messageStart = PartitionIndex.getAStart(tMin);
-        System.out.println("messageStart "+messageStart);
+        System.out.println("messageStart " + messageStart);
         long messageEnd = PartitionIndex.getAEnd(tMax);
         int length = (int) (messageEnd - messageStart);
         byteBuffer.clear();
@@ -40,10 +40,16 @@ public class MessageReader {
         for (long i = min; i <= max; i++) {
             ByteBuffer byteBuffer1 = MessageCache.map.get(i);
             if (byteBuffer1 != null) {
-                for (int j = 0; j < byteBuffer1.limit(); j++) {
-                    byteBuffer.put(byteBuffer1.get(j));
+                if (!byteBuffer1.isDirect()) {
+                    System.arraycopy(byteBuffer1.array(), 0, byteBuffer.array(), byteBuffer.position(), byteBuffer1.limit());
+                    byteBuffer.position(byteBuffer.position() + byteBuffer1.limit());
+                } else {
+                    for (int j = 0; j < byteBuffer1.limit(); j++) {
+                        byteBuffer.put(byteBuffer1.get(j));
+                    }
                 }
                 length -= byteBuffer1.limit();
+
             } else {
                 breakpoint = i;
                 break;
