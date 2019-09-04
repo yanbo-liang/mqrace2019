@@ -6,27 +6,6 @@ import java.nio.LongBuffer;
 
 public class CompressUtil {
 
-    public static long compressLong(long a, ByteBuffer aBuffer) {
-        if (a <= Constants.A_Mark) {
-            aBuffer.put((byte) (a >> 40));
-            aBuffer.put((byte) (a >> 32));
-            aBuffer.put((byte) (a >> 24));
-            aBuffer.put((byte) (a >> 16));
-            aBuffer.put((byte) (a >> 8));
-            aBuffer.put((byte) (a));
-            return 6;
-        } else {
-            aBuffer.put((byte) 0);
-            aBuffer.put((byte) 0);
-            aBuffer.put((byte) 0);
-            aBuffer.put((byte) 0);
-            aBuffer.put((byte) 0);
-            aBuffer.put((byte) 0);
-            aBuffer.putLong(a);
-            return 14;
-        }
-    }
-
     public static int compress(ByteBuffer uncompressed, ByteBuffer compressed, int start) {
         // 32 bit int, total bit length
         // 32 bit int, uncompressed length
@@ -72,20 +51,6 @@ public class CompressUtil {
         }
     }
 
-    public static long[] decompress(ByteBuffer compressed, int start) {
-        long[] uncompressed = new long[compressed.getInt(4 + start)];
-        uncompressed[0] = compressed.getLong(8 + start);
-        long last = uncompressed[0];
-        int i = 1;
-        for (int pointer = 128; pointer < compressed.getInt(start); pointer++) {
-            if (increaseBit(compressed, start, pointer)) {
-                last++;
-                continue;
-            }
-            uncompressed[i++] = last;
-        }
-        return uncompressed;
-    }
 
     private static void flipBit(ByteBuffer compressed, int start, int bitPointer) {
         int byteIndex = bitPointer / 8;

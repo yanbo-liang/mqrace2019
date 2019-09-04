@@ -3,53 +3,55 @@ package io.openmessaging.core;
 import io.openmessaging.CompressUtil;
 import io.openmessaging.Constants;
 import io.openmessaging.DirectBufferManager;
-import io.openmessaging.core.partition.APartition;
-import io.openmessaging.core.partition.MessagePartition;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
 public class PartitionIndex {
-    static NavigableMap<Long, MessagePartition> partitionMap = new TreeMap<>();
+    static NavigableMap<Long, PartitionInfo> partitionMap = new TreeMap<>();
     private static long tMin = 0, tMax = Constants.Partition_Size - 1;
     private static long mStart = 0, mTotal = 0;
+    private static long aStartPos = 0, aTotalByte = 0;
     private static int totalTCompressed = 0;
     private static ByteBuffer tBuffer = ByteBuffer.allocate((int) Constants.Partition_Size * 100 * 8);
-    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(500000));
+    private static long top = (1L << 48) - 1;
+    private static ThreadLocal<LongBuffer> localLongBuffer = ThreadLocal.withInitial(() -> LongBuffer.allocate(100000));
 
-
-    private static long aStart = 0, aTotal = 0;
-    private static long aPartitionCount = 10;
-    private static long aPartitionSize = Constants.A_Mark / 10;
-    private static long aMin = 0, aMax = aPartitionSize - 1;
-    private static NavigableMap<Long, APartition> aPartitionMap = new TreeMap<>();
-
+    private static void compressLong(long a, ByteBuffer aBuffer) {
+        if (a <= top) {
+            aBuffer.put((byte) (a >> 40));
+            aBuffer.put((byte) (a >> 32));
+            aBuffer.put((byte) (a >> 24));
+            aBuffer.put((byte) (a >> 16));
+            aBuffer.put((byte) (a >> 8));
+            aBuffer.put((byte) (a));
+            aTotalByte += 6;
+        } else {
+            aBuffer.put((byte) 0);
+            aBuffer.put((byte) 0);
+            aBuffer.put((byte) 0);
+            aBuffer.put((byte) 0);
+            aBuffer.put((byte) 0);
+            aBuffer.put((byte) 0);
+            aBuffer.putLong(a);
+            aTotalByte += 14;
+        }
+    }
 
     public static void flushIndex() {
-        flushAIndex();
-        aPartitionCount = 10;
-        aMin = 0;
-        aMax = aPartitionSize - 1;
         if (mStart != mTotal) {
             tBuffer.flip();
             int byteCompressed = CompressUtil.compress(tBuffer, DirectBufferManager.getCompressedBuffer(), totalTCompressed);
             tBuffer.clear();
-            partitionMap.put(tMin, new MessagePartition(mStart, mTotal, totalTCompressed, aPartitionMap));
-            aPartitionMap.clear();
+            partitionMap.put(tMin / Constants.Partition_Size, new PartitionInfo(mStart, mTotal, totalTCompressed, aStartPos, aTotalByte));
             mStart = mTotal;
+            aStartPos = aTotalByte;
             totalTCompressed += byteCompressed;
         }
 //        System.out.println("totalTCompressed " + totalTCompressed);
-    }
 
-    public static void flushAIndex() {
-        if (aStart != aTotal) {
-            aPartitionMap.put(aMin, new APartition(aStart, aTotal));
-            aStart = aTotal;
-        }
     }
 
     public static void buildIndex(long t, long a, ByteBuffer aBuffer) {
@@ -59,70 +61,75 @@ public class PartitionIndex {
             tMax = tMin + Constants.Partition_Size - 1;
         }
         tBuffer.putLong(t);
+        compressLong(a, aBuffer);
         mTotal += 1;
-
-        while (!(aMin <= a && a <= aMax)) {
-            flushAIndex();
-            if (aPartitionCount == 0) {
-                aMin = Constants.A_Mark / 10 * 10;
-                aMax = Long.MAX_VALUE;
-                break;
-            }
-            aMin += aPartitionSize;
-            aMax += aPartitionSize;
-            aPartitionCount -= 1;
-        }
-
-        aTotal += CompressUtil.compressLong(a, aBuffer);
     }
 
-    public static MessagePartition getFirstMessagePartition(long tMin) {
-        return partitionMap.ceilingEntry(tMin / Constants.Partition_Size * Constants.Partition_Size).getValue();
+    public static long getAStart(long tMin) {
+        return partitionMap.ceilingEntry(tMin / Constants.Partition_Size).getValue().aStart;
     }
 
-    public static MessagePartition getLastMessagePartition(long tMax) {
-        return partitionMap.floorEntry(tMax).getValue();
+    public static long getAEnd(long tMax) {
+        return partitionMap.floorEntry(tMax / Constants.Partition_Size).getValue().aEnd;
     }
 
-    public static NavigableMap<Long, MessagePartition> getMessagePartitions(long tMin, long tMax) {
-        return partitionMap.subMap(tMin / Constants.Partition_Size * Constants.Partition_Size, true, tMax, true);
+    public static long getBodyStart(long tMin) {
+        return partitionMap.ceilingEntry(tMin / Constants.Partition_Size).getValue().mStart * Constants.Body_Size;
     }
 
-    public static long getAStartInFirstPartition(MessagePartition firstPartition, long tMin) {
-        long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), firstPartition.cStart);
-        int i = 0;
-        for (; i < uncompressed.length; i++) {
-            if (uncompressed[i] >= tMin) {
-                break;
-            }
-        }
-        return (firstPartition.mStart + i) * 8;
+    public static long getBodyEnd(long tMax) {
+        return partitionMap.floorEntry(tMax / Constants.Partition_Size).getValue().mEnd * Constants.Body_Size;
     }
 
-    public static long getAEndInLastPartition(MessagePartition lastPartition, long tMax) {
-        long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), lastPartition.cStart);
-        int i = 0;
-        for (; i < uncompressed.length; i++) {
-            if (uncompressed[uncompressed.length - 1 - i] <= tMax) {
-                break;
-            }
-        }
-        return (lastPartition.mEnd - i) * 8;
-    }
+//    public static long getAStart(long tMin) {
+//        PartitionInfo partitionInfo = partitionMap.ceilingEntry(tMin / partitionSize).getValue();
+//        long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), partitionInfo.cStart);
+//        int i = 0;
+//        for (; i < uncompressed.length; i++) {
+//            if (uncompressed[i] >= tMin) {
+//                break;
+//            }
+//        }
+//        return (partitionInfo.mStart + i) * 8;
+//    }
+//
+//    public static long getAEnd(long tMax) {
+//        PartitionInfo partitionInfo = partitionMap.floorEntry(tMax / partitionSize).getValue();
+//        long[] uncompressed = CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), partitionInfo.cStart);
+//        int i = 0;
+//        for (; i < uncompressed.length; i++) {
+//            if (uncompressed[uncompressed.length - 1 - i] <= tMax) {
+//                break;
+//            }
+//        }
+//        return (partitionInfo.mEnd - i) * 8;
+//    }
 
     public static LongBuffer getTArray(long tMin, long tMax) {
-        NavigableMap<Long, MessagePartition> subMap = getMessagePartitions(tMin, tMax);
+        NavigableMap<Long, PartitionInfo> subMap = partitionMap.subMap(tMin / Constants.Partition_Size, true, tMax / Constants.Partition_Size, true);
 
         LongBuffer longBuffer = localLongBuffer.get();
         longBuffer.clear();
-        for (MessagePartition info : subMap.values()) {
+        for (PartitionInfo info : subMap.values()) {
             CompressUtil.decompress(DirectBufferManager.getCompressedBuffer(), longBuffer, info.cStart);
         }
         longBuffer.flip();
         return longBuffer;
     }
 
+    public static class PartitionInfo {
+        long mStart, mEnd;
+        int cStart;
+        long aStart, aEnd;
 
+        PartitionInfo(long mStart, long mEnd, int cStart, long aStart, long aEnd) {
+            this.mStart = mStart;
+            this.mEnd = mEnd;
+            this.cStart = cStart;
+            this.aStart = aStart;
+            this.aEnd = aEnd;
+        }
+    }
 }
 
 

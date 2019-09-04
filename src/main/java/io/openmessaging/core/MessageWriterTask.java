@@ -5,7 +5,6 @@ import io.openmessaging.DirectBufferManager;
 import io.openmessaging.unsafe.UnsafeWrapper;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 
 class MessageWriterTask implements Runnable {
@@ -75,8 +74,8 @@ class MessageWriterTask implements Runnable {
 
                 System.out.println("total time:" + (System.currentTimeMillis() - totalStart));
                 if (isEnd) {
-                    sorted = null;
-                    unsorted = null;
+                    sorted=null;
+                    unsorted=null;
                     synchronized (MessageWriter.class) {
                         MessageWriter.class.notify();
                     }
@@ -85,42 +84,35 @@ class MessageWriterTask implements Runnable {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(1);
         }
     }
 
     private void processBatch(int start, int limit, boolean waitComplete) throws Exception {
         long startTime = System.currentTimeMillis();
 
-        int length = limit - start;
-
         ByteBuffer bodyBuffer = DirectBufferManager.borrowBodyBuffer();
         ByteBuffer aBuffer = DirectBufferManager.borrowABuffer();
-        ByteBuffer sortedABuffer = DirectBufferManager.borrowSortedABuffer();
 
         long[] tArray = sorted.tArray;
         long[] aArray = sorted.aArray;
         byte[] bodyArray = sorted.bodyArray;
 
-        long[] sortedAArray = new long[length];
-        System.arraycopy(aArray, start, sortedAArray, 0, length);
-        Arrays.sort(sortedAArray);
-
-        for (int i = 0; i < length; i += 1) {
-            PartitionIndex.buildIndex(tArray[i + start], sortedAArray[i], sortedABuffer);
-            aBuffer.putLong(aArray[i + start]);
+        for (int i = start; i < limit; i += 1) {
+            PartitionIndex.buildIndex(tArray[i],aArray[i],aBuffer);
         }
 
+        int length = limit - start;
         UnsafeWrapper.unsafeCopy(bodyArray, start, bodyBuffer, 0, length);
+//        UnsafeWrapper.unsafeCopyA(aArray, start, aBuffer, 0, length);
+
         bodyBuffer.position(length * Constants.Body_Size);
 
         bodyBuffer.flip();
         aBuffer.flip();
-        sortedABuffer.flip();
 
         System.out.println("fill time " + (System.currentTimeMillis() - startTime));
 
-        MessageWriter.asyncWrite(bodyBuffer, aBuffer, sortedABuffer);
+        MessageWriter.asyncWrite(bodyBuffer, aBuffer);
         if (waitComplete) {
             MessageWriter.waitAsyncWriteComplete();
         }

@@ -15,16 +15,14 @@ class MessageWriter {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static BlockingQueue<MessageBatchWrapper> blockingQueue = new SynchronousQueue<>();
     private static AtomicInteger pendingAsyncWrite = new AtomicInteger(0);
-    private static AsynchronousFileChannel bodyChannel, aChannel, sortedAChannel;
+    private static AsynchronousFileChannel bodyChannel, aChannel;
     private static long bodyTotalByteWritten = 0;
     private static long aTotalByteWritten = 0;
-    private static long sortedATotalByteWritten = 0;
 
     static {
         try {
             bodyChannel = AsynchronousFileChannel.open(Paths.get(Constants.Body_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             aChannel = AsynchronousFileChannel.open(Paths.get(Constants.A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-            sortedAChannel = AsynchronousFileChannel.open(Paths.get(Constants.Sorted_A_Path), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             executorService.execute(new MessageWriterTask(blockingQueue));
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,30 +59,24 @@ class MessageWriter {
 //        executorService.shutdown();
     }
 
-    static void asyncWrite(ByteBuffer bodyBuffer, ByteBuffer aBuffer, ByteBuffer sortedABuffer) {
-        pendingAsyncWrite.incrementAndGet();
+    static void asyncWrite(ByteBuffer bodyBuffer, ByteBuffer aBuffer) {
         pendingAsyncWrite.incrementAndGet();
         pendingAsyncWrite.incrementAndGet();
 
         bodyChannel.write(bodyBuffer, bodyTotalByteWritten, bodyBuffer, new WriteBodyHandler());
         aChannel.write(aBuffer, aTotalByteWritten, aBuffer, new WriteAHandler());
-        sortedAChannel.write(sortedABuffer, sortedATotalByteWritten, sortedABuffer, new WriteSortedAHandler());
 
         bodyTotalByteWritten += bodyBuffer.limit();
         aTotalByteWritten += aBuffer.limit();
-        sortedATotalByteWritten += sortedABuffer.limit();
 
         System.out.println("bodyTotalByteWritten " + bodyTotalByteWritten);
         System.out.println("aTotalByteWritten " + aTotalByteWritten);
-        System.out.println("sortedATotalByteWritten " + sortedATotalByteWritten);
-
     }
 
     static void waitAsyncWriteComplete() throws Exception {
         while (pendingAsyncWrite.get() != 0) ;
         bodyChannel.close();
         aChannel.close();
-        sortedAChannel.close();
     }
 
     private static class WriteBodyHandler implements CompletionHandler<Integer, ByteBuffer> {
@@ -117,23 +109,6 @@ class MessageWriter {
 
         @Override
         public void failed(Throwable exc, ByteBuffer aBuffer) {
-            exc.printStackTrace();
-        }
-    }
-
-    private static class WriteSortedAHandler implements CompletionHandler<Integer, ByteBuffer> {
-        @Override
-        public void completed(Integer result, ByteBuffer sortedABuffer) {
-            try {
-                pendingAsyncWrite.decrementAndGet();
-                DirectBufferManager.returnSortedABuffer(sortedABuffer);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void failed(Throwable exc, ByteBuffer sortedABuffer) {
             exc.printStackTrace();
         }
     }

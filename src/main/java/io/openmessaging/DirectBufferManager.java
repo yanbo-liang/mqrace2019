@@ -11,19 +11,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class DirectBufferManager {
     private static BlockingQueue<ByteBuffer> bodyBufferQueue = new LinkedBlockingQueue<>();
     private static BlockingQueue<ByteBuffer> aBufferQueue = new LinkedBlockingQueue<>();
-    private static BlockingQueue<ByteBuffer> sortedABufferQueue = new LinkedBlockingQueue<>();
-
     private static ByteBuffer compressedBuffer;
 
     static {
         compressedBuffer = ByteBuffer.allocateDirect((int) Constants.Compressed_Buffer_Size);
-        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) /
-                (Constants.Write_Body_Buffer_Size + Constants.Write_A_Buffer_Size + Constants.Write_Sorted_A_Buffer_Size);
+        long queueSize = (Constants.Direct_Memory_Size - Constants.Compressed_Buffer_Size) / (Constants.Write_Body_Buffer_Size + Constants.Write_A_Buffer_Size);
         System.out.println("queueSize" + queueSize);
         for (long i = 0; i < queueSize; i++) {
             bodyBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Body_Buffer_Size));
             aBufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_A_Buffer_Size));
-            sortedABufferQueue.offer(ByteBuffer.allocateDirect((int) Constants.Write_Sorted_A_Buffer_Size));
         }
     }
 
@@ -51,21 +47,10 @@ public class DirectBufferManager {
         aBufferQueue.put(buffer);
     }
 
-    public static ByteBuffer borrowSortedABuffer() throws Exception {
-        ByteBuffer buffer = sortedABufferQueue.take();
-        buffer.clear();
-        return buffer;
-    }
-
-    public static void returnSortedABuffer(ByteBuffer buffer) throws Exception {
-        sortedABufferQueue.put(buffer);
-    }
-
     public static void freeWriteBuffer() {
         List<ByteBuffer> tmp = new ArrayList<>();
         bodyBufferQueue.drainTo(tmp);
         aBufferQueue.drainTo(tmp);
-        sortedABufferQueue.drainTo(tmp);
         for (ByteBuffer buffer : tmp) {
             ((DirectBuffer) buffer).cleaner().clean();
         }
